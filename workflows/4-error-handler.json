@@ -154,7 +154,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "5ee9225d-b98f-473e-86ed-3129ad1b717d"
+      "id": "5ee9225d-b98f-473e-86ed-3129ad1b717d",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
