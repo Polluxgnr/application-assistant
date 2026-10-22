@@ -1,0 +1,287 @@
+{
+  "name": "4. Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Error workflow\nFires when a run of the Main workflow still fails after the node retries.\n→ me: failed node + error on my admin channel\n→ user: *something went wrong* (found through the `runs` table by execution id)",
+        "height": 180,
+        "width": 1400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -224
+      ],
+      "name": "E1",
+      "id": "627655bb-8c48-403e-a4ee-06ad1fe2f894"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        112
+      ],
+      "name": "Error Trigger",
+      "id": "f715c4d4-1eeb-46ed-bb07-f26aa9569823"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ADMIN_CHANNEL_ID = '1559918396273852446';\nconst ex = $json.execution || {};\nconst msg = [\n  '🛑 **' + ($json.workflow?.name || 'Workflow') + '** failed',\n  'Node: `' + (ex.lastNodeExecuted || '?') + '`',\n  'Error: ' + String(ex.error?.message || 'unknown').slice(0, 800),\n  ex.url ? 'Execution: ' + ex.url : 'Execution id: ' + ex.id,\n].join('\\n');\n// Main fails on its Run Analyzer / Run Generator node when a sub-workflow failed: that sub-workflow already alerted me\nconst already_alerted = /^Run (Analyzer|Generator)/.test(ex.lastNodeExecuted || '');\nreturn [{ json: { admin_channel_id: ADMIN_CHANNEL_ID, admin_message: msg, execution_id: String(ex.id || ''), failed_node: ex.lastNodeExecuted || '', already_alerted } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        112
+      ],
+      "name": "Format Error",
+      "id": "b003d833-663a-48cf-b997-d25063d4bec1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://discord.com/api/v10/channels/{{ $json.admin_channel_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.admin_message.slice(0, 1990) }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        32
+      ],
+      "name": "Discord: Alert Me",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "5114d8f0-a8bf-4b42-98a1-4e0a24583a51",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AOHwJRZXdD5IQR6Q",
+          "name": "Discord Bot Auth"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "1JJJUwEyw7jAlHNl",
+          "mode": "list",
+          "cachedResultName": "runs",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1JJJUwEyw7jAlHNl"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "execution_id",
+              "keyValue": "={{ $('Format Error').first().json.execution_id }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        112
+      ],
+      "name": "DB: Find Run",
+      "alwaysOutputData": true,
+      "id": "3defac91-516b-4e38-bfa8-5aed66536da9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e010b587-199e-400a-b10c-73a08037735d",
+              "leftValue": "={{ !!$json.token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        112
+      ],
+      "name": "User to notify?",
+      "id": "80dd420c-c3ad-4769-bedb-3a96b6db31c1"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('DB: Find Run').first().json.app_id }}/{{ $('DB: Find Run').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('⚠️ Something went wrong on my side (step: ' + $('Format Error').first().json.failed_node + '). The details were sent to the admin. Please try again in a minute — if it was a job link, try `/job text:<paste the offer>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        80
+      ],
+      "name": "Discord: Tell User",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "5ee9225d-b98f-473e-86ed-3129ad1b717d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "13bca25f-bd95-4e6b-975c-1feca6f74e59",
+              "leftValue": "={{ $json.already_alerted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        112
+      ],
+      "name": "Not alerted yet?",
+      "id": "2978cef9-a501-4293-9fec-31a0b36138e8"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Not alerted yet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord: Alert Me": {
+      "main": [
+        [
+          {
+            "node": "DB: Find Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Find Run": {
+      "main": [
+        [
+          {
+            "node": "User to notify?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User to notify?": {
+      "main": [
+        [
+          {
+            "node": "Discord: Tell User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not alerted yet?": {
+      "main": [
+        [
+          {
+            "node": "Discord: Alert Me",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Find Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "695fd95c-0a22-408d-a71a-ae4b00c45f5c",
+  "meta": {
+    "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
+  },
+  "nodeGroups": [],
+  "id": "xrabiaYTkTTQjDY4",
+  "tags": []
+}

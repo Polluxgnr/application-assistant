@@ -1,0 +1,1120 @@
+{
+  "name": "AA | 2. Sub – Analyzer (skill gaps)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Analyzer\nInput: `user_id, app_id, token, url, text`\nReads saved CV → gets the offer (URL or pasted text) → AI extracts requirements → Code finds gaps → asks ONE question and saves `state=waiting`.",
+        "height": 200,
+        "width": 1500,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -224
+      ],
+      "name": "A1",
+      "id": "c8d3116a-3139-46c5-abb3-1352bd7523a7"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        128
+      ],
+      "name": "Start",
+      "id": "7c170d52-a430-4b5f-bf8f-6d6898efc076"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "1bu0xnmV2dSqQTNB",
+          "mode": "list",
+          "cachedResultName": "facts",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Start').first().json.user_id }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        128
+      ],
+      "name": "DB: My Facts",
+      "alwaysOutputData": true,
+      "id": "ece83a68-9cd0-4738-9140-134c17726923"
+    },
+    {
+      "parameters": {
+        "jsCode": "const start = $('Start').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.kind);\nconst base = rows.find(r => r.kind === 'base_cv');\nconst prof = rows.find(r => r.kind === 'cv_profile');\nlet profile = {};\ntry { profile = JSON.parse(prof?.value || '{}'); } catch (e) {}\n// only positive facts count as \"has the skill\"\nconst extra = rows.filter(r => ['skill', 'experience'].includes(r.kind)).map(r => r.value);\nreturn [{ json: { ...start, has_cv: !!base, base_cv: base?.value || '', profile, extra_facts: extra } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        128
+      ],
+      "name": "Load Profile",
+      "id": "054c3451-2e40-49cf-8e24-1b5a6fe28627"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7917647d-5012-4f36-be99-c024aa70799d",
+              "leftValue": "={{ $json.has_cv }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        128
+      ],
+      "name": "Has CV?",
+      "id": "a0c5b84f-2995-489e-8924-d3ad066a5daa"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('📄 I don\\'t have your CV yet. Send it first with `/cv file:<cv.pdf>`, then send the job again.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        320
+      ],
+      "name": "Reply: Upload CV First",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "99d536d9-4242-43ac-8556-9866c772d80d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f808325-bf81-4b9d-9a60-2f661dec77a2",
+              "name": "status",
+              "value": "no_cv",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        320
+      ],
+      "name": "Return: no_cv",
+      "id": "c55af208-bace-4e81-8baa-33e9292247f5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2a85e49a-43cd-4f01-99bb-6ce5cf020c0a",
+              "leftValue": "={{ ($json.text || '').length > 150 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        112
+      ],
+      "name": "Offer text pasted?",
+      "id": "93c8befb-730d-4a36-806e-ab07119dc752"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ed6e200a-cad8-4f66-a36f-9fec7e7b168c",
+              "name": "job_text",
+              "value": "={{ $('Start').first().json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        -16
+      ],
+      "name": "Use Pasted Text",
+      "id": "a0b43a76-78f1-4a33-bf24-4e3d7e82f0e6"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Start').first().json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "fr-FR,fr;q=0.9,en;q=0.8"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 20000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        160
+      ],
+      "name": "Fetch Offer Page",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "db6fa06e-5b74-44f1-a12f-c4aa5ab1f518",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn the job page into plain text. Prefer schema.org JobPosting (LinkedIn, Indeed, WTTJ… embed it).\nconst html = String($input.first().json.data || '');\nlet text = '';\nfor (const m of html.matchAll(/<script[^>]*application\\/ld\\+json[^>]*>([\\s\\S]*?)<\\/script>/gi)) {\n  try {\n    const data = JSON.parse(m[1].trim());\n    const list = Array.isArray(data) ? data : (data['@graph'] || [data]);\n    const jp = list.find(x => String(x['@type']).includes('JobPosting'));\n    if (jp) {\n      text = [jp.title, jp.hiringOrganization?.name, jp.description].filter(Boolean).join('\\n');\n      break;\n    }\n  } catch (e) {}\n}\nconst strip = s => s\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ').replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, ' ').replace(/<br\\s*\\/?>|<\\/p>|<\\/li>/gi, '\\n')\n  .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '\"')\n  .replace(/&#39;|&apos;/g, \"'\").replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n  .replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n').trim();\ntext = text ? strip(text) : strip(html);\nreturn [{ json: { job_text: text.slice(0, 15000), readable: text.length >= 400 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        144
+      ],
+      "name": "Clean Page to Text",
+      "id": "dfc6c4e8-a238-4158-bb57-d32b74a15031"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0cc328c6-6404-4f8c-90c3-17889edfa3ce",
+              "leftValue": "={{ $json.readable }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        144
+      ],
+      "name": "Readable?",
+      "id": "b10e04e6-1702-4d66-8986-b3c6fb2093e8"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('🚧 I couldn\\'t read that page (blocked or JavaScript-only). Copy the offer and send it with `/job text:<paste the offer here>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        368
+      ],
+      "name": "Reply: Paste the Text",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "583d986f-7bef-4cba-acf9-c1591dd35059"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "239309f1-ba4f-41ed-bc7e-863b619289f0",
+              "name": "status",
+              "value": "fetch_failed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1984,
+        368
+      ],
+      "name": "Return: fetch_failed",
+      "id": "c3d6f50d-3960-4058-83ce-c377c9c8ce2f"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a recruiter. Read the job offer and return the JSON structure.\n- \"requirements\": the 6 to 12 most important required skills, tools or experiences, each as a short keyword of 1-4 words (e.g. \"Python\", \"SQL\", \"Agile\", \"Stakeholder management\").\n- \"nice_to_have\": optional skills, same format.\n- \"language\": \"fr\" or \"en\", the language of the offer.\n- Use \"Not specified\" when something is missing. Never invent.\n\nJOB OFFER:\n{{ $json.job_text }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1760,
+        0
+      ],
+      "name": "AI: Extract Offer",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "2ede36e6-0b0a-4e1f-96ef-e8c2595a20e0"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        208
+      ],
+      "name": "Gemini · Extract Offer",
+      "id": "724a7687-1ef4-40e5-b3e5-afc1399aa020",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"company\": \"Acme\",\n  \"role_title\": \"Data Analyst Intern\",\n  \"language\": \"fr\",\n  \"location\": \"Paris\",\n  \"contact_email\": \"Not specified\",\n  \"requirements\": [\n    \"Python\",\n    \"SQL\",\n    \"Agile\"\n  ],\n  \"nice_to_have\": [\n    \"Tableau\"\n  ],\n  \"summary\": \"Two-sentence summary of the role and team.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1920,
+        208
+      ],
+      "name": "Schema · Extract Offer",
+      "id": "9219d7fd-dc29-4fc0-a780-e3999d8c1b7e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compare the offer's requirements with what we know about the candidate.\nconst offer = $input.first().json.output || {};\nconst ctx = $('Load Profile').first().json;\n// read the original input: the IF node's unused branch is empty\nconst pastedText = String($('Start').first().json.text || '');\nconst jobText = pastedText.length > 150\n  ? pastedText\n  : ($('Clean Page to Text').isExecuted ? $('Clean Page to Text').first().json.job_text : '');\n\nconst norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .replace(/[^a-z0-9+#. ]/g, ' ').replace(/\\.(?= |$)/g, ' ').replace(/\\s+/g, ' ').trim();\n// profile values only: JSON keys like \"tools\" or \"skills\" must not count as matches\nconst values = o => o && typeof o === 'object' ? Object.values(o).flatMap(values) : [String(o ?? '')];\nconst haystack = ' ' + norm([ctx.base_cv, ...values(ctx.profile), ...ctx.extra_facts].join(' ')) + ' ';\n// whole words only, so \"Git\" does not match \"github\" and \"Go\" does not match \"Google\"\nconst has = t => haystack.includes(' ' + t + ' ');\nconst STOP = new Set(['and', 'or', 'of', 'the', 'with', 'in', 'for', 'de', 'et', 'des', 'la', 'le', 'les', 'du', 'en']);\n\nconst reqs = (offer.requirements || []).filter(Boolean);\nconst matched = [], missing = [];\nfor (const r of reqs) {\n  const n = norm(r);\n  const words = n.split(' ').filter(w => w.length > 1 && !STOP.has(w));\n  const hit = has(n) || (words.length > 0 && words.every(has));\n  (hit ? matched : missing).push(r);\n}\nconst match_score = reqs.length ? Math.round((10 * matched.length) / reqs.length) : 5;\n// missing: the 3 we ask about; missing_all: everything the Generator must never claim\nreturn [{ json: {\n  user_id: ctx.user_id, app_id: ctx.app_id, token: ctx.token, url: ctx.url,\n  offer, job_text: jobText, matched, missing: missing.slice(0, 3), missing_all: missing, match_score,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "name": "Code: Gap Analysis",
+      "id": "44b26934-1394-4fd3-9fb4-b8ba41a1956b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8c49b806-6381-4a5c-a548-8904d65f7b7c",
+              "leftValue": "={{ $json.missing.length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2304,
+        0
+      ],
+      "name": "Missing skills?",
+      "id": "e8b3844a-383b-44f1-8f89-fff3d02b3112"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a friendly career coach chatting on Discord. The candidate wants to apply to \"{{ $json.offer.role_title }}\" at {{ $json.offer.company }}.\nTheir CV does not show these requirements: {{ $json.missing.join(', ') }}.\n\nWrite ONE short, warm question (max 60 words) asking whether they have any experience with these, and asking for a concrete example (project, course, job, tool used). Write in {{ $json.offer.language === 'fr' ? 'French' : 'English' }}. Plain text only, no preamble.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2528,
+        -128
+      ],
+      "name": "AI: Draft Question",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "b20239da-f107-4f77-924f-4f024159b0f3"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        80
+      ],
+      "name": "Gemini · Draft Question",
+      "id": "fa06d2f1-7285-4ed9-9138-2f3a299bcf6e",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "VGBqX7I8stxaiuxa",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Code: Gap Analysis').first().json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Code: Gap Analysis').first().json.user_id }}",
+            "state": "waiting",
+            "job_url": "={{ $('Code: Gap Analysis').first().json.url }}",
+            "job_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.offer) }}",
+            "job_text": "={{ ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000) }}",
+            "missing_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.missing_all) }}",
+            "question": "={{ $('AI: Draft Question').first().json.text }}",
+            "match_score": "={{ $('Code: Gap Analysis').first().json.match_score }}",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_url",
+              "displayName": "job_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_json",
+              "displayName": "job_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_text",
+              "displayName": "job_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "missing_json",
+              "displayName": "missing_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "match_score",
+              "displayName": "match_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2848,
+        -128
+      ],
+      "name": "DB: Session = waiting",
+      "id": "ddfc3495-78cf-4cbe-b9b2-d9602a30120d"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('🔎 **' + $('Code: Gap Analysis').first().json.offer.role_title + ' @ ' + $('Code: Gap Analysis').first().json.offer.company + '** — first match: ' + $('Code: Gap Analysis').first().json.match_score + '/10\\n✅ ' + ($('Code: Gap Analysis').first().json.matched.join(', ') || '—') + '\\n❔ ' + $('Code: Gap Analysis').first().json.missing.join(', ') + '\\n\\n' + $('AI: Draft Question').first().json.text + '\\n\\n↳ Reply with `/answer text:...`').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3072,
+        -128
+      ],
+      "name": "Reply: Ask Question",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "715a5b97-05ab-4142-94e6-8d21f0003f5a"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f6b0522-f251-4a3d-8061-77d0163c4a0d",
+              "name": "status",
+              "value": "asked",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3280,
+        -128
+      ],
+      "name": "Return: asked",
+      "id": "96631dbb-b2a8-4039-8149-9d9210000ffd"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "VGBqX7I8stxaiuxa",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Code: Gap Analysis').first().json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Code: Gap Analysis').first().json.user_id }}",
+            "state": "ready",
+            "job_url": "={{ $('Code: Gap Analysis').first().json.url }}",
+            "job_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.offer) }}",
+            "job_text": "={{ ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000) }}",
+            "missing_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.missing_all) }}",
+            "question": "",
+            "match_score": "={{ $('Code: Gap Analysis').first().json.match_score }}",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_url",
+              "displayName": "job_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_json",
+              "displayName": "job_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_text",
+              "displayName": "job_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "missing_json",
+              "displayName": "missing_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "match_score",
+              "displayName": "match_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2528,
+        160
+      ],
+      "name": "DB: Session = ready",
+      "id": "4874c13a-b06c-4450-9818-c7f521c6f7b1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f987aaba-ccf4-4c73-ae2c-65b0928f97cf",
+              "name": "status",
+              "value": "no_gaps",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2752,
+        160
+      ],
+      "name": "Return: no_gaps",
+      "id": "e3899a5e-d49c-4465-a8ee-3d2acc661f37"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gemini · Extract Offer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Extract Offer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schema · Extract Offer": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Extract Offer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini · Draft Question": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Draft Question",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "DB: My Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: My Facts": {
+      "main": [
+        [
+          {
+            "node": "Load Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Profile": {
+      "main": [
+        [
+          {
+            "node": "Has CV?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has CV?": {
+      "main": [
+        [
+          {
+            "node": "Offer text pasted?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Upload CV First",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Upload CV First": {
+      "main": [
+        [
+          {
+            "node": "Return: no_cv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offer text pasted?": {
+      "main": [
+        [
+          {
+            "node": "Use Pasted Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Offer Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Offer Page": {
+      "main": [
+        [
+          {
+            "node": "Clean Page to Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Paste the Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Page to Text": {
+      "main": [
+        [
+          {
+            "node": "Readable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readable?": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract Offer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Paste the Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Pasted Text": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract Offer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Paste the Text": {
+      "main": [
+        [
+          {
+            "node": "Return: fetch_failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Extract Offer": {
+      "main": [
+        [
+          {
+            "node": "Code: Gap Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Gap Analysis": {
+      "main": [
+        [
+          {
+            "node": "Missing skills?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missing skills?": {
+      "main": [
+        [
+          {
+            "node": "AI: Draft Question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Session = ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Draft Question": {
+      "main": [
+        [
+          {
+            "node": "DB: Session = waiting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Session = waiting": {
+      "main": [
+        [
+          {
+            "node": "Reply: Ask Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Ask Question": {
+      "main": [
+        [
+          {
+            "node": "Return: asked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Session = ready": {
+      "main": [
+        [
+          {
+            "node": "Return: no_gaps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "xrabiaYTkTTQjDY4"
+  },
+  "versionId": "3de34102-db39-4a8f-bb8b-73aec8e7fb51",
+  "meta": {
+    "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
+  },
+  "nodeGroups": [],
+  "id": "C3Ew0OtmltX5dMDE",
+  "tags": []
+}

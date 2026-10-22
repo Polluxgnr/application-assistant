@@ -1,0 +1,1310 @@
+{
+  "name": "AA | 1. Main – Discord Router",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1 · Discord interaction in\nSlash commands hit this webhook. Signature is checked (Ed25519), Discord's PING is answered, then we answer within 3 s with a *thinking…* state.",
+        "height": 520,
+        "width": 1180,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -144
+      ],
+      "name": "Note Trigger",
+      "id": "55426412-f9be-45bb-a81f-b21468653964"
+    },
+    {
+      "parameters": {
+        "content": "## 2 · Router\nOne Switch sends each command to its path. Heavy work is delegated to the **Analyzer** and **Generator** sub-workflows.",
+        "height": 520,
+        "width": 640,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        -144
+      ],
+      "name": "Note Router",
+      "id": "dd007cea-2fb0-4afd-a750-35cb7414e1fc"
+    },
+    {
+      "parameters": {
+        "content": "## 3 · /cv — ingest the base CV once\nDownload the PDF → extract text → AI parses it to JSON → stored in the `facts` table.",
+        "height": 300,
+        "width": 1700,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -416
+      ],
+      "name": "Note CV",
+      "id": "17fda7ce-e85d-4797-8ff3-6537f957cf95"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "application-assistant",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        128
+      ],
+      "name": "Discord Interaction",
+      "webhookId": "558c95e0-0f12-48ff-9a30-548265246337",
+      "id": "6b553851-addc-4468-b2bd-a8365633fdcb"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifies Discord's Ed25519 signature and flattens the interaction payload.\nconst crypto = require('crypto');\nconst PUBLIC_KEY = '699a8928437d0c98901eab57ea2d15897a73457788a5d07f96b7ccf224c46e08'; // Developer Portal > General Information\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst sig = headers['x-signature-ed25519'];\nconst ts = headers['x-signature-timestamp'];\n\nlet raw = '';\nif (item.binary && Object.keys(item.binary).length) {\n  const key = Object.keys(item.binary)[0];\n  raw = (await this.helpers.getBinaryDataBuffer(0, key)).toString('utf8');\n} else {\n  raw = JSON.stringify(item.json.body || {});\n}\n\nlet valid = false;\ntry {\n  const pub = crypto.createPublicKey({\n    key: Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), Buffer.from(PUBLIC_KEY, 'hex')]),\n    format: 'der', type: 'spki',\n  });\n  valid = !!sig && !!ts && crypto.verify(null, Buffer.from(ts + raw), pub, Buffer.from(sig, 'hex'));\n} catch (e) { valid = false; }\n\nlet body = {};\ntry { body = JSON.parse(raw); } catch (e) { body = item.json.body || {}; }\n\nconst opts = {};\nfor (const o of (body.data?.options || [])) opts[o.name] = o.value;\nconst attachment = opts.file ? (body.data?.resolved?.attachments?.[opts.file] || null) : null;\nconst user = body.member?.user || body.user || {};\n\nreturn [{ json: {\n  valid,\n  type: Number(body.type || 0),\n  command: body.data?.name || '',\n  user_id: String(user.id || ''),\n  username: user.global_name || user.username || '',\n  app_id: String(body.application_id || ''),\n  token: body.token || '',\n  url: String(opts.url || '').trim(),\n  text: String(opts.text || '').trim(),\n  attachment,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        128
+      ],
+      "name": "Verify & Parse",
+      "id": "c64a7b98-4323-43ec-b410-1b1d19e0875e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "eb4c97c6-744f-40be-8700-5a6585e53ddb",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        128
+      ],
+      "name": "Signature valid?",
+      "id": "85f14509-63b5-4e6b-bd51-a855b3792a77"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"error\":\"invalid request signature\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        672,
+        288
+      ],
+      "name": "Reject 401",
+      "id": "f321a570-6929-4720-9525-586156f6b455"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "565561d9-7467-41ad-9566-46791f776c11",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ping"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bb78f908-2d51-4f23-ba3f-54a1d32233a6",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": 2,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "command"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        80
+      ],
+      "name": "Interaction Type",
+      "id": "4c78ffe3-5094-46da-bc4b-e52845333e52"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"type\":1}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        -48
+      ],
+      "name": "PONG",
+      "id": "9f0fd58f-b823-4213-9b51-9ddc1fc18933"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fd9a274f-853c-4b2a-aedb-8dc9ef518eb5",
+              "leftValue": "={{ ['cv','job','answer'].includes($json.command) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        144
+      ],
+      "name": "Known command?",
+      "id": "4e96b65b-496d-45a5-92cb-379d6cc52dd5"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ type: 4, data: { content: \"**Application Assistant** — how to use me\\n\\n1️⃣ `/cv file:<your CV.pdf>` — upload your base CV once (send it again to replace it)\\n2️⃣ `/job url:<link>` — I read the offer, compare it to your CV and ask about missing skills\\n   ↳ page blocked? use `/job text:<paste the offer>`\\n3️⃣ `/answer text:<your answer>` — I remember it and generate your tailored **CV (PDF)**, **cover letter** and **interview cheat sheet**\\n\\n`/help` — this message\" } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1104,
+        288
+      ],
+      "name": "Help / Usage",
+      "id": "c0566abf-5dcd-4e10-bab8-2f144a787f49"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"type\":5}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1104,
+        112
+      ],
+      "name": "Defer: Thinking…",
+      "id": "b5e0b97e-2d4d-4770-90fb-a3ea74bade16"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "1JJJUwEyw7jAlHNl",
+          "mode": "list",
+          "cachedResultName": "runs",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1JJJUwEyw7jAlHNl"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "execution_id": "={{ $execution.id }}",
+            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
+            "app_id": "={{ $('Verify & Parse').first().json.app_id }}",
+            "token": "={{ $('Verify & Parse').first().json.token }}",
+            "command": "={{ $('Verify & Parse').first().json.command }}",
+            "created_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "app_id",
+              "displayName": "app_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "token",
+              "displayName": "token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        112
+      ],
+      "name": "DB: Log Run",
+      "id": "f059bd03-7c59-426e-8f21-3f27beed713a"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0a4ba37f-5245-4ce3-9100-03dd48e94da3",
+                    "leftValue": "={{ $('Verify & Parse').first().json.command }}",
+                    "rightValue": "cv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cv"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c663793f-9d0a-4ed3-97dd-3ee579a6dc84",
+                    "leftValue": "={{ $('Verify & Parse').first().json.command }}",
+                    "rightValue": "job",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "job"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "729b395e-8b95-444c-a913-94bf0dcad2e8",
+                    "leftValue": "={{ $('Verify & Parse').first().json.command }}",
+                    "rightValue": "answer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "answer"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1552,
+        112
+      ],
+      "name": "Command Router",
+      "id": "1af6b0bd-d742-4241-ba37-ab320cdb2c07"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0d315511-1a76-4078-924e-fb316381f7a4",
+              "leftValue": "={{ ($('Verify & Parse').first().json.attachment?.content_type || '').includes('pdf') || ($('Verify & Parse').first().json.attachment?.filename || '').toLowerCase().endsWith('.pdf') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        -304
+      ],
+      "name": "Is a PDF?",
+      "id": "cc82a2a7-1dff-4099-828f-c311c26d77d5"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Verify & Parse').first().json.app_id }}/{{ $('Verify & Parse').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('⚠️ Please attach your CV as a **PDF**: `/cv file:<cv.pdf>`').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        -144
+      ],
+      "name": "Reply: Not a PDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "81eb2139-60b0-40a3-b40b-c8e274a53f80"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Verify & Parse').first().json.attachment.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        -320
+      ],
+      "name": "Download CV PDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "a5131b7e-1222-4135-ab0f-fc3a235fbd2d"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        -320
+      ],
+      "name": "Extract PDF Text",
+      "id": "cbaf77a3-062e-4d73-b555-a9c9e8396bd3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a precise CV parser. Extract the candidate's CV below into the JSON structure. Copy facts exactly as written, never invent anything. Keep every metric and number. List each skill or tool as a short keyword (1-4 words).\n\nCV TEXT:\n{{ $json.text }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2528,
+        -320
+      ],
+      "name": "AI: Parse Base CV",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "db5a14d0-eb37-4067-882a-3e4990258a26"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        -128
+      ],
+      "name": "Gemini · Parse Base CV",
+      "id": "bfa4c0ca-1888-46fb-b58e-ca6da6be3ba7",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"full_name\": \"Pollux Gronier\",\n  \"headline\": \"Data & AI student\",\n  \"email\": \"name@mail.com\",\n  \"languages\": [\n    \"French (native)\",\n    \"English (C1)\"\n  ],\n  \"skills\": [\n    \"Python\",\n    \"SQL\",\n    \"Machine learning\"\n  ],\n  \"tools\": [\n    \"n8n\",\n    \"Power BI\"\n  ],\n  \"experiences\": [\n    {\n      \"title\": \"Data Intern\",\n      \"organization\": \"Enedis\",\n      \"dates\": \"2025\",\n      \"highlights\": [\n        \"Automated a reporting pipeline handling 60,000 requests\"\n      ]\n    }\n  ],\n  \"education\": [\n    {\n      \"degree\": \"Bachelor AI, Data & Statistics\",\n      \"school\": \"CentraleSupélec / ESSEC\",\n      \"dates\": \"2024-2027\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2688,
+        -128
+      ],
+      "name": "Schema · Parse Base CV",
+      "id": "a1c447cc-5f6e-4d44-9d26-0083d86e9699"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "1bu0xnmV2dSqQTNB",
+          "mode": "list",
+          "cachedResultName": "facts",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Verify & Parse').first().json.user_id }}"
+            },
+            {
+              "keyName": "kind",
+              "keyValue": "cv_profile"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
+            "kind": "cv_profile",
+            "value": "={{ JSON.stringify($('AI: Parse Base CV').first().json.output) }}",
+            "source": "cv",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2848,
+        -320
+      ],
+      "name": "DB: Save CV Profile",
+      "id": "ef1f98f4-1750-41fc-b4a5-624fe0b4cccb"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "1bu0xnmV2dSqQTNB",
+          "mode": "list",
+          "cachedResultName": "facts",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Verify & Parse').first().json.user_id }}"
+            },
+            {
+              "keyName": "kind",
+              "keyValue": "base_cv"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
+            "kind": "base_cv",
+            "value": "={{ $('Extract PDF Text').first().json.text.slice(0, 30000) }}",
+            "source": "cv",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3072,
+        -320
+      ],
+      "name": "DB: Save Base CV Text",
+      "id": "43670b46-0e89-469b-a7fc-4386e19f5ddf"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Verify & Parse').first().json.app_id }}/{{ $('Verify & Parse').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('✅ CV saved' + ($('AI: Parse Base CV').first().json.output.full_name ? ' for **' + $('AI: Parse Base CV').first().json.output.full_name + '**' : '') + ': ' + (($('AI: Parse Base CV').first().json.output.skills || []).length + ($('AI: Parse Base CV').first().json.output.tools || []).length) + ' skills/tools, ' + ($('AI: Parse Base CV').first().json.output.experiences || []).length + ' experiences.\\nNow send `/job url:<link to an offer>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3280,
+        -320
+      ],
+      "name": "Reply: CV Saved",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "dc92c163-226c-407f-987d-0c3795a24384"
+    },
+    {
+      "parameters": {
+        "content": "## 4 · /job → Analyzer sub-workflow\nIf no skill is missing, the Analyzer returns `no_gaps` and we go straight to the Generator.",
+        "height": 260,
+        "width": 1100,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -80
+      ],
+      "name": "Note Job",
+      "id": "3c4792ea-eb8d-48a5-8639-3ce3b73d8e70"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify($('Verify & Parse').first().json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        48
+      ],
+      "name": "Payload: Job",
+      "id": "2ad9fdaa-cc03-4b7e-81f3-ab9762715236"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "C3Ew0OtmltX5dMDE",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2080,
+        48
+      ],
+      "name": "Run Analyzer",
+      "id": "c94be75f-d829-4dfb-930c-7657f1ea84e9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1fe31a86-e19b-4561-bfa2-d6856ff15089",
+              "leftValue": "={{ $json.status === 'no_gaps' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2304,
+        48
+      ],
+      "name": "No gaps?",
+      "id": "a9cdd8ae-7027-4bd3-92b7-ba123ae3862b"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ ...$('Verify & Parse').first().json, answer: '' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2528,
+        32
+      ],
+      "name": "Payload: Direct Generate",
+      "id": "8b98f77f-9c47-4da3-83a2-8162cda7e7d0"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "BuBLvhHQEfmDExIe",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2752,
+        32
+      ],
+      "name": "Run Generator (no questions)",
+      "id": "87c3a229-f832-4b63-901e-b45dde11d9a2"
+    },
+    {
+      "parameters": {
+        "content": "## 5 · /answer → Generator sub-workflow",
+        "height": 220,
+        "width": 700,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        208
+      ],
+      "name": "Note Answer",
+      "id": "c35035dd-6e75-4da1-ae95-4a2bbfc557fc"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ ...$('Verify & Parse').first().json, answer: $('Verify & Parse').first().json.text }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        288
+      ],
+      "name": "Payload: Answer",
+      "id": "a1ef6380-2897-4b0c-ba84-04054eb87d07"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "BuBLvhHQEfmDExIe",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2080,
+        288
+      ],
+      "name": "Run Generator",
+      "id": "e4459ba3-3104-4f53-a5a7-ac94b4543834"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Discord Interaction": {
+      "main": [
+        [
+          {
+            "node": "Verify & Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify & Parse": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Interaction Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interaction Type": {
+      "main": [
+        [
+          {
+            "node": "PONG",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Known command?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Help / Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Known command?": {
+      "main": [
+        [
+          {
+            "node": "Defer: Thinking…",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Help / Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Defer: Thinking…": {
+      "main": [
+        [
+          {
+            "node": "DB: Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Log Run": {
+      "main": [
+        [
+          {
+            "node": "Command Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini · Parse Base CV": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Parse Base CV",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schema · Parse Base CV": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Parse Base CV",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Router": {
+      "main": [
+        [
+          {
+            "node": "Is a PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Payload: Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Payload: Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a PDF?": {
+      "main": [
+        [
+          {
+            "node": "Download CV PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Not a PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download CV PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "AI: Parse Base CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Parse Base CV": {
+      "main": [
+        [
+          {
+            "node": "DB: Save CV Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Save CV Profile": {
+      "main": [
+        [
+          {
+            "node": "DB: Save Base CV Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Save Base CV Text": {
+      "main": [
+        [
+          {
+            "node": "Reply: CV Saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload: Job": {
+      "main": [
+        [
+          {
+            "node": "Run Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Analyzer": {
+      "main": [
+        [
+          {
+            "node": "No gaps?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No gaps?": {
+      "main": [
+        [
+          {
+            "node": "Payload: Direct Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload: Direct Generate": {
+      "main": [
+        [
+          {
+            "node": "Run Generator (no questions)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload: Answer": {
+      "main": [
+        [
+          {
+            "node": "Run Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "xrabiaYTkTTQjDY4"
+  },
+  "versionId": "f2f6e938-029e-40a8-bbfa-c73d5147a45e",
+  "meta": {
+    "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
+  },
+  "nodeGroups": [],
+  "id": "qGOZbSYnXWg9CR0O",
+  "tags": []
+}

@@ -1,0 +1,1324 @@
+{
+  "name": "3. Sub – Generator (CV, letter, cheat sheet)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. New skills are saved **permanently** in `facts`.",
+        "height": 200,
+        "width": 1560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -240
+      ],
+      "name": "G1",
+      "id": "7fa91d65-3261-491d-bd41-6c9fee41f8e2"
+    },
+    {
+      "parameters": {
+        "content": "## Generator · part 2 — write\nTailored CV sections (fixed Google Docs template) + cover letter + interview cheat sheet.",
+        "height": 200,
+        "width": 1300,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -240
+      ],
+      "name": "G2",
+      "id": "95362deb-d9d6-4662-8dec-a16004b7784b"
+    },
+    {
+      "parameters": {
+        "content": "## Generator · part 3 — publish\nDrive folder → CV from template → Docs for letter & cheat sheet → session `done` → PDF sent back on Discord.",
+        "width": 2300,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        384
+      ],
+      "name": "G3",
+      "id": "b3e10e3a-f4e1-4987-b76a-7fe9ddc6ccb8"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        128
+      ],
+      "name": "Start",
+      "id": "358f30be-3a50-4674-940b-54f1cea71362"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "VGBqX7I8stxaiuxa",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Start').first().json.user_id }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        128
+      ],
+      "name": "DB: My Session",
+      "alwaysOutputData": true,
+      "id": "e50af1c0-0f74-4edd-9cf8-98977ec9e7bb"
+    },
+    {
+      "parameters": {
+        "jsCode": "const start = $('Start').first().json;\nconst s = $input.all().map(i => i.json).find(r => r && r.user_id) || null;\nlet offer = {};\ntry { offer = JSON.parse(s?.job_json || '{}'); } catch (e) {}\nreturn [{ json: {\n  ...start, answer: start.answer || '',\n  has_job: !!(s && s.job_json), session: s, offer,\n  job_text: s?.job_text || '', question: s?.question || '', match_score: s?.match_score || '',\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        128
+      ],
+      "name": "Load Session",
+      "id": "9442becd-2029-4cba-a847-8067384e4295"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1d5eccea-22ba-44a3-949e-e08c1e7e41c7",
+              "leftValue": "={{ $json.has_job && $json.session.state !== 'done' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        128
+      ],
+      "name": "Job in progress?",
+      "id": "3ea6752c-5cf6-4dac-9d05-c9b2f9fc9e6d"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('🤔 I have no job offer in progress. Send one first with `/job url:<link>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        320
+      ],
+      "name": "Reply: No Job Yet",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "4b2d482c-1716-405f-8ce4-6976efa92a21"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1b099329-0f6f-4eab-89c7-5b50dd5d25e6",
+              "name": "status",
+              "value": "no_job",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        320
+      ],
+      "name": "Return: no_job",
+      "id": "fb7a312f-4aaa-4778-b145-31e299b7f385"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "08f12be2-f1d9-4f8f-b848-c2150ca85f73",
+              "leftValue": "={{ $json.answer.length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        112
+      ],
+      "name": "Answer given?",
+      "id": "0f749405-4551-4dc1-91a4-d12fde43b966"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract the facts the candidate just confirmed about themselves.\n\nQuestion the bot asked: {{ $json.question }}\nCandidate's answer: {{ $json.answer }}\n\nReturn a list of facts. kind is \"skill\" (a skill/tool they have, include short context, e.g. \"Agile (Scrum) — used during graduation project\"), \"experience\" (a concrete project or achievement), or \"gap\" (something they clearly do NOT have, e.g. \"No experience with Tableau\"). Only use what the answer says. Never invent.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1104,
+        -16
+      ],
+      "name": "AI: Extract New Skills",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "8bab1c05-7e02-4b74-ba08-edded4708186"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        192
+      ],
+      "name": "Gemini · Extract New Skills",
+      "id": "34785cea-552a-4cd2-b6b3-cdcfb413901f",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"facts\": [\n    {\n      \"kind\": \"skill\",\n      \"value\": \"Agile (Scrum) — used during graduation project\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1264,
+        192
+      ],
+      "name": "Schema · Extract New Skills",
+      "id": "bbd3c870-1fb7-4dd3-9c61-fdacff15f7cf"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Load Session').first().json;\nconst facts = ($input.first().json.output?.facts || []).filter(f => f && f.value);\nconst rows = facts.length ? facts : [{ kind: 'answer', value: ctx.answer }];\nreturn rows.map(f => ({ json: { user_id: ctx.user_id, kind: f.kind || 'answer', value: String(f.value).slice(0, 1000) } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -16
+      ],
+      "name": "Split Facts",
+      "id": "5287e5cd-e7c3-484c-b6f7-16f841e9242c"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "1bu0xnmV2dSqQTNB",
+          "mode": "list",
+          "cachedResultName": "facts",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.user_id }}",
+            "kind": "={{ $json.kind }}",
+            "value": "={{ $json.value }}",
+            "source": "answer",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        -16
+      ],
+      "name": "DB: Save New Facts",
+      "id": "349c30a4-f799-44b8-bc53-145edd61d829"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "1bu0xnmV2dSqQTNB",
+          "mode": "list",
+          "cachedResultName": "facts",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Load Session').first().json.user_id }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        112
+      ],
+      "name": "DB: All My Facts",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "id": "a0654cc3-d792-4a3f-92a7-958593bc0b2f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Load Session').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.kind);\nconst base = rows.find(r => r.kind === 'base_cv')?.value || '';\nconst facts = rows.filter(r => ['skill', 'experience', 'answer'].includes(r.kind)).map(r => '- ' + r.value);\nconst gaps = rows.filter(r => r.kind === 'gap').map(r => '- ' + r.value);\nlet master = base;\nif (facts.length) master += '\\n\\nADDITIONAL FACTS CONFIRMED BY THE CANDIDATE (true, may be used):\\n' + facts.join('\\n');\nif (gaps.length) master += '\\n\\nKNOWN GAPS (never claim these):\\n' + gaps.join('\\n');\n// requirements the Analyzer could not find on the CV: only usable if a confirmed fact covers them\nlet unconfirmed = [];\ntry { unconfirmed = JSON.parse(ctx.session?.missing_json || '[]'); } catch (e) {}\nif (unconfirmed.length) master += '\\n\\nJOB REQUIREMENTS NOT FOUND ON THE CV (never claim these unless an ADDITIONAL FACT above explicitly confirms it):\\n' + unconfirmed.map(x => '- ' + x).join('\\n');\nreturn [{ json: { ...ctx, master_resume: master } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        112
+      ],
+      "name": "Build Profile",
+      "id": "bc52b03e-3aa3-4101-bb1c-332a206ad116"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert resume writer specializing in ATS-optimized, achievement-focused resumes. Tailor the candidate's resume content for one specific job while staying strictly factual.\n\n## INPUT DATA\n**Master Resume (base CV + facts the candidate confirmed in chat):**\n{{ $json.master_resume }}\n\n**Target Job:**\n- Company: {{ $json.offer.company }}\n- Role: {{ $json.offer.role_title }}\n- Key requirements: {{ ($json.offer.requirements || []).join(', ') }}\n- Full Description: {{ $json.job_text }}\n\n## YOUR TASK\nRewrite ONLY these five sections so they fit this job. Everything else (dates, titles, schools, languages, other experiences) is fixed in a template and must not be touched.\n1. SUMMARY: 2-3 lines (max 55 words) positioning the candidate for this role, built from real facts.\n2. DIGIMOBEE_BULLETS: 2-3 bullets about the Digimobee experience.\n3. ENEDIS_BULLETS: 2 bullets about the Enedis experience.\n4. ESSEC_ECON_BULLETS: 2 bullets about the ESSEC economics experience.\n5. SKILLS: one comma-separated line (max 330 characters) with the skills that best match the job, most relevant first. Confirmed facts from chat may be included.\n\n## LANGUAGE\nWrite everything in the language of the job description ({{ $json.offer.language === 'fr' ? 'French' : 'English' }}).\n\n## RULES\n- DO reorder, emphasize and reword existing achievements; reuse exact keywords from the job description where they genuinely apply.\n- DO start each bullet with a strong action verb. Max 22 words per bullet.\n- DO NOT fabricate experience, skills, tools, metrics or numbers. Only use numbers present in the master resume.\n- DO NOT claim anything listed under KNOWN GAPS or JOB REQUIREMENTS NOT FOUND ON THE CV, unless an ADDITIONAL FACT explicitly confirms it.\n- SKILLS may only contain skills, tools and languages that appear in the master resume or the ADDITIONAL FACTS. Never copy a skill from the job description that the candidate has not shown.\n- Keep each bullet about its own experience: only attach a tool or skill to an experience if the master resume links them there.\n- DO NOT change employment dates or job titles. No commentary like \"directly transferable to...\".\n- Plain text only: no markdown, no \"#\", \"**\", dashes or bullet symbols. Separate bullets with a newline.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2208,
+        112
+      ],
+      "name": "AI: Tailor CV",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "d42aa878-82fc-4577-8113-e9bafbf8bab4"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        304
+      ],
+      "name": "Gemini · Tailor CV",
+      "id": "24b981ac-6916-4497-97c3-5129192743d2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"SUMMARY\": \"...\",\n  \"DIGIMOBEE_BULLETS\": \"bullet one\\nbullet two\",\n  \"ENEDIS_BULLETS\": \"bullet one\\nbullet two\",\n  \"ESSEC_ECON_BULLETS\": \"bullet one\\nbullet two\",\n  \"SKILLS\": \"Python, SQL, ...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2368,
+        304
+      ],
+      "name": "Schema · Tailor CV",
+      "id": "205b346d-93da-4e4e-83fa-3fb3949e56e7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const o = $input.first().json.output || {};\nconst ctx = $('Build Profile').first().json;\nconst clean = s => String(s || '').replace(/\\*\\*|__/g, '').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•*]\\s*/gm, '').trim();\n// the template already has \"- \" before each placeholder, so join bullets with \"\\n- \"\nconst bullets = s => clean(s).split(/\\n+/).map(x => x.trim()).filter(Boolean).join('\\n- ');\nconst company = ctx.offer.company && ctx.offer.company !== 'Not specified' ? ctx.offer.company : 'Company';\nconst role = ctx.offer.role_title && ctx.offer.role_title !== 'Not specified' ? ctx.offer.role_title : 'Role';\nreturn [{ json: {\n  SUMMARY: clean(o.SUMMARY),\n  DIGIMOBEE_BULLETS: bullets(o.DIGIMOBEE_BULLETS),\n  ENEDIS_BULLETS: bullets(o.ENEDIS_BULLETS),\n  ESSEC_ECON_BULLETS: bullets(o.ESSEC_ECON_BULLETS),\n  SKILLS: clean(o.SKILLS),\n  company, role,\n  safe_name: (company + ' - ' + role).replace(/[\\\\/:*?\"<>|]/g, '').slice(0, 90),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        112
+      ],
+      "name": "Prepare Resume Data",
+      "id": "3e0717e0-c480-48a9-a7d4-0fc9f8772c93"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You write application documents for a student. Use ONLY true facts from the profile.\n\nCANDIDATE PROFILE:\n{{ $('Build Profile').first().json.master_resume }}\n\nTARGET JOB:\nCompany: {{ $json.company }}\nRole: {{ $json.role }}\nDescription: {{ $('Build Profile').first().json.job_text }}\n\nSTRICT FACTS: never invent personal motivations or history (e.g. \"I've been following you for years\"), technical details, results or methods that are not in the profile. In the cheat sheet, when a story needs a detail the profile does not give, write [add your detail] instead of inventing it.\n\nWrite in {{ $('Build Profile').first().json.offer.language === 'fr' ? 'French' : 'English' }}.\n\n1) \"cover_letter\": 300-400 words, personable and confident, reads like a human wrote it.\n- Start with the date {{ $now.toFormat('dd MMMM yyyy') }}, then \"Hiring Manager\" (or the contact if given) and the company, then the greeting.\n- Strong conversational hook, then 2-3 concrete examples from the profile that match the requirements, why this company/role, short confident close. Sign \"Pollux Gronier\".\n- Use contractions, vary sentence length, no clichés (\"team player\", \"passionate about\"), no AI tells (\"leverage\", \"drive results\", \"Moreover\", \"Furthermore\", \"I'm excited to bring\").\n- If there is a gap, acknowledge it directly (\"I haven't used X yet, but...\").\n- Plain text, blank line between paragraphs, no markdown.\n\n2) \"cheat_sheet\": an interview prep sheet in plain text with these sections:\nROLE IN ONE LINE / WHAT THEY CARE ABOUT (top 5 requirements) / MY BEST MATCHING STORIES (3 STAR stories from the profile) / LIKELY QUESTIONS & HOW I ANSWER (6) / GAPS & HOW I ADDRESS THEM / QUESTIONS TO ASK THEM (3).",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2752,
+        112
+      ],
+      "name": "AI: Cover Letter & Cheat Sheet",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "60e4382e-f33d-4394-a5b6-3a1ecb0adb79"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        304
+      ],
+      "name": "Gemini · Cover Letter & Cheat Sheet",
+      "id": "72fb7dee-77b4-4b34-bda9-a2bc3df88635",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wPkyL88ebUKInVNS",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"cover_letter\": \"Full letter text...\",\n  \"cheat_sheet\": \"ROLE IN ONE LINE\\n...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2912,
+        304
+      ],
+      "name": "Schema · Cover Letter & Cheat Sheet",
+      "id": "9ac06828-3027-4dfb-9dd2-c4e46881e124"
+    },
+    {
+      "parameters": {
+        "jsCode": "const o = $input.first().json.output || {};\nconst strip = s => String(s || '').replace(/\\*\\*/g, '').replace(/^#+\\s*/gm, '').trim();\nreturn [{ json: { cover_letter: strip(o.cover_letter), cheat_sheet: strip(o.cheat_sheet) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        112
+      ],
+      "name": "Code: Format Output",
+      "id": "911a5902-d870-4b6c-8e29-cf6843d7c428"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Prepare Resume Data').first().json.safe_name }} - {{ $now.toFormat('yyyy-MM-dd') }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1l8jvomhFde1HWJdgng3z6jD5cQoy5gfH",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        608
+      ],
+      "name": "Drive: Create Folder",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "ffe8e9fc-0cf1-42a3-94e8-9219a241fa43",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "24oEElfOZuhZnB8Q",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1kYEynYslsx-8eZxO0_utgpyqiexieN0b9zko-pLPf-Y",
+          "mode": "id"
+        },
+        "name": "=CV - {{ $('Prepare Resume Data').first().json.safe_name }}",
+        "sameFolder": false,
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Drive: Create Folder').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1824,
+        608
+      ],
+      "name": "Drive: Copy CV Template",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "9a9939c4-e8f2-4648-a4e9-0044a26f2503",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "24oEElfOZuhZnB8Q",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $('Drive: Copy CV Template').first().json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "{{SUMMARY}}",
+              "replaceText": "={{ $('Prepare Resume Data').first().json.SUMMARY }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{DIGIMOBEE_BULLETS}}",
+              "replaceText": "={{ $('Prepare Resume Data').first().json.DIGIMOBEE_BULLETS }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ENEDIS_BULLETS}}",
+              "replaceText": "={{ $('Prepare Resume Data').first().json.ENEDIS_BULLETS }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{ESSEC_ECON_BULLETS}}",
+              "replaceText": "={{ $('Prepare Resume Data').first().json.ESSEC_ECON_BULLETS }}",
+              "matchCase": true
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{SKILLS}}",
+              "replaceText": "={{ $('Prepare Resume Data').first().json.SKILLS }}",
+              "matchCase": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        608
+      ],
+      "name": "Docs: Fill CV",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "5317b335-8eb1-4836-8e13-e7770fbf4ee9",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "97KadA1seJflRq1N",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "folderId": "={{ $('Drive: Create Folder').first().json.id }}",
+        "title": "=Cover Letter - {{ $('Prepare Resume Data').first().json.safe_name }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2272,
+        608
+      ],
+      "name": "Docs: Create Letter",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "636fc6d3-ec93-4af9-935e-b0d543133b07",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "97KadA1seJflRq1N",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Code: Format Output').first().json.cover_letter }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2480,
+        608
+      ],
+      "name": "Docs: Write Letter",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "896dd99e-df3b-452f-b875-52c04ebaf177",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "97KadA1seJflRq1N",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "folderId": "={{ $('Drive: Create Folder').first().json.id }}",
+        "title": "=Interview Cheat Sheet - {{ $('Prepare Resume Data').first().json.safe_name }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        608
+      ],
+      "name": "Docs: Create Cheat",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "2f775fd9-3d4d-438d-9671-9515198f7f94",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "97KadA1seJflRq1N",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Code: Format Output').first().json.cheat_sheet }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2928,
+        608
+      ],
+      "name": "Docs: Write Cheat",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "54070cd7-a576-41db-a94c-7d121774de96",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "97KadA1seJflRq1N",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "VGBqX7I8stxaiuxa",
+          "mode": "list",
+          "cachedResultName": "sessions",
+          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Load Session').first().json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "state": "done",
+            "updated_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3152,
+        608
+      ],
+      "name": "DB: Session = done",
+      "executeOnce": true,
+      "id": "d61452d2-2a46-47cb-9077-adb2243ed240"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Drive: Copy CV Template').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          },
+          "fileName": "=CV - {{ $('Prepare Resume Data').first().json.safe_name }}.pdf"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3360,
+        608
+      ],
+      "name": "Drive: Export CV PDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "executeOnce": true,
+      "id": "82bf8913-ee40-482f-983c-5d6de4f11fd3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "24oEElfOZuhZnB8Q",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "payload_json",
+              "value": "={{ JSON.stringify({ content: String('✅ **' + $('Prepare Resume Data').first().json.role + ' @ ' + $('Prepare Resume Data').first().json.company + '**' + ($('Load Session').first().json.match_score !== '' ? ' — match ' + $('Load Session').first().json.match_score + '/10' : '') + '\\n📄 Tailored CV attached (PDF)' + '\\n✉️ Cover letter: https://docs.google.com/document/d/' + $('Docs: Write Letter').first().json.documentId + '\\n🎯 Interview cheat sheet: https://docs.google.com/document/d/' + $('Docs: Write Cheat').first().json.documentId + '\\n📁 Folder: https://drive.google.com/drive/folders/' + $('Drive: Create Folder').first().json.id).slice(0, 1990), attachments: [{ id: 0, filename: 'CV - ' + $('Prepare Resume Data').first().json.safe_name + '.pdf' }] }) }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "files[0]",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3584,
+        608
+      ],
+      "name": "Reply: Send Documents",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "905a72d0-783a-46e2-a53d-91524caa11c3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1a18b02-045e-495e-9c9f-8c005da4ad2d",
+              "name": "status",
+              "value": "done",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3808,
+        608
+      ],
+      "name": "Return: done",
+      "id": "bd249963-24ad-468a-b193-b4b7bc174d12"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gemini · Extract New Skills": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Extract New Skills",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schema · Extract New Skills": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Extract New Skills",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini · Tailor CV": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Tailor CV",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schema · Tailor CV": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Tailor CV",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini · Cover Letter & Cheat Sheet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI: Cover Letter & Cheat Sheet",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schema · Cover Letter & Cheat Sheet": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Cover Letter & Cheat Sheet",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "DB: My Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: My Session": {
+      "main": [
+        [
+          {
+            "node": "Load Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Session": {
+      "main": [
+        [
+          {
+            "node": "Job in progress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job in progress?": {
+      "main": [
+        [
+          {
+            "node": "Answer given?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: No Job Yet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: No Job Yet": {
+      "main": [
+        [
+          {
+            "node": "Return: no_job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer given?": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract New Skills",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: All My Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Extract New Skills": {
+      "main": [
+        [
+          {
+            "node": "Split Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Facts": {
+      "main": [
+        [
+          {
+            "node": "DB: Save New Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Save New Facts": {
+      "main": [
+        [
+          {
+            "node": "DB: All My Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: All My Facts": {
+      "main": [
+        [
+          {
+            "node": "Build Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Profile": {
+      "main": [
+        [
+          {
+            "node": "AI: Tailor CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Tailor CV": {
+      "main": [
+        [
+          {
+            "node": "Prepare Resume Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Resume Data": {
+      "main": [
+        [
+          {
+            "node": "AI: Cover Letter & Cheat Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Cover Letter & Cheat Sheet": {
+      "main": [
+        [
+          {
+            "node": "Code: Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Format Output": {
+      "main": [
+        [
+          {
+            "node": "Drive: Create Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive: Create Folder": {
+      "main": [
+        [
+          {
+            "node": "Drive: Copy CV Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive: Copy CV Template": {
+      "main": [
+        [
+          {
+            "node": "Docs: Fill CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs: Fill CV": {
+      "main": [
+        [
+          {
+            "node": "Docs: Create Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs: Create Letter": {
+      "main": [
+        [
+          {
+            "node": "Docs: Write Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs: Write Letter": {
+      "main": [
+        [
+          {
+            "node": "Docs: Create Cheat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs: Create Cheat": {
+      "main": [
+        [
+          {
+            "node": "Docs: Write Cheat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docs: Write Cheat": {
+      "main": [
+        [
+          {
+            "node": "DB: Session = done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Session = done": {
+      "main": [
+        [
+          {
+            "node": "Drive: Export CV PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive: Export CV PDF": {
+      "main": [
+        [
+          {
+            "node": "Reply: Send Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Send Documents": {
+      "main": [
+        [
+          {
+            "node": "Return: done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "xrabiaYTkTTQjDY4"
+  },
+  "versionId": "b928bc8e-5270-4dfb-8b09-0f29e328c864",
+  "meta": {
+    "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
+  },
+  "nodeGroups": [],
+  "id": "BuBLvhHQEfmDExIe",
+  "tags": []
+}

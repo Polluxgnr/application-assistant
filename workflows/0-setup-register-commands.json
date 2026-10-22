@@ -1,0 +1,123 @@
+{
+  "name": "AA | 0. Setup – Register Slash Commands",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Run once\nRegisters /help /cv /job /answer on your server. Fill APP_ID and GUILD_ID in the Set node, then click *Execute workflow*.",
+        "width": 900,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -208
+      ],
+      "name": "S1",
+      "id": "c6bb2bfb-2c11-46fc-b1d7-351e663c13da"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        112
+      ],
+      "name": "Run Once",
+      "id": "dcec7c5d-40f7-409d-9f01-4327856cfd24"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ad3bd7a7-1ae1-4c3d-8ab2-eb358d199e4c",
+              "name": "app_id",
+              "value": "1559897095744258078",
+              "type": "string"
+            },
+            {
+              "id": "3e587426-4be1-4b64-8103-ff73be189536",
+              "name": "guild_id",
+              "value": "1459280147361431742",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        112
+      ],
+      "name": "Config",
+      "id": "0bf61686-28e9-487c-b498-e7190a3f0975"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://discord.com/api/v10/applications/{{ $json.app_id }}/guilds/{{ $json.guild_id }}/commands",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "[\n  {\n    \"name\": \"help\",\n    \"description\": \"How to use the Application Assistant\",\n    \"type\": 1\n  },\n  {\n    \"name\": \"cv\",\n    \"description\": \"Upload your base CV (PDF)\",\n    \"type\": 1,\n    \"options\": [\n      {\n        \"type\": 11,\n        \"name\": \"file\",\n        \"description\": \"Your CV as a PDF\",\n        \"required\": true\n      }\n    ]\n  },\n  {\n    \"name\": \"job\",\n    \"description\": \"Analyze a job offer (link or pasted text)\",\n    \"type\": 1,\n    \"options\": [\n      {\n        \"type\": 3,\n        \"name\": \"url\",\n        \"description\": \"Link to the job offer\",\n        \"required\": false\n      },\n      {\n        \"type\": 3,\n        \"name\": \"text\",\n        \"description\": \"Or paste the offer text\",\n        \"required\": false\n      }\n    ]\n  },\n  {\n    \"name\": \"answer\",\n    \"description\": \"Answer the bot's question about a skill\",\n    \"type\": 1,\n    \"options\": [\n      {\n        \"type\": 3,\n        \"name\": \"text\",\n        \"description\": \"Your answer\",\n        \"required\": true\n      }\n    ]\n  }\n]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        112
+      ],
+      "name": "Register Commands",
+      "id": "29aa2d6c-853e-42a8-af56-f770b6bff1ee",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "AOHwJRZXdD5IQR6Q",
+          "name": "Discord Bot Auth"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Once": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Register Commands",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "03516e2a-f18e-44c6-836b-1f691f92c9cd",
+  "meta": {
+    "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
+  },
+  "nodeGroups": [],
+  "id": "6Cy0U9WN3YmH5MAn",
+  "tags": []
+}
