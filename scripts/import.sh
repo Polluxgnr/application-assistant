@@ -13,8 +13,30 @@ cat > credentials/postgres.local.json <<JSON
 JSON
 
 n8n() { docker compose exec -T n8n n8n "$@"; }
-n8n import:credentials --input=/credentials/stubs.json
+[ -f credentials/.stubs-imported ] || { n8n import:credentials --input=/credentials/stubs.json && touch credentials/.stubs-imported; }
 n8n import:credentials --input=/credentials/postgres.local.json
+
+# Secrets typed into .env by the user: same ids as the placeholders, so every node stays linked
+if [ -n "${DISCORD_BOT_TOKEN:-}${OPENROUTER_API_KEY:-}${GOOGLE_OAUTH_CLIENT_ID:-}" ]; then
+  python - <<'PY'
+import json, os
+e = os.environ.get
+creds = []
+if e('DISCORD_BOT_TOKEN'):
+    creds.append({"id": "AOHwJRZXdD5IQR6Q", "name": "Discord Bot Auth", "type": "httpHeaderAuth",
+                  "data": {"name": "Authorization", "value": "Bot " + e('DISCORD_BOT_TOKEN')}})
+if e('OPENROUTER_API_KEY'):
+    creds.append({"id": "wPkyL88ebUKInVNS", "name": "OpenRouter account 2", "type": "openRouterApi",
+                  "data": {"apiKey": e('OPENROUTER_API_KEY')}})
+if e('GOOGLE_OAUTH_CLIENT_ID'):
+    g = {"clientId": e('GOOGLE_OAUTH_CLIENT_ID'), "clientSecret": e('GOOGLE_OAUTH_CLIENT_SECRET', '')}
+    creds.append({"id": "24oEElfOZuhZnB8Q", "name": "Google Drive account", "type": "googleDriveOAuth2Api", "data": dict(g)})
+    creds.append({"id": "97KadA1seJflRq1N", "name": "Google Docs account", "type": "googleDocsOAuth2Api", "data": dict(g)})
+json.dump(creds, open("credentials/secrets.local.json", "w"))
+PY
+  n8n import:credentials --input=/credentials/secrets.local.json
+  rm -f credentials/secrets.local.json
+fi
 n8n import:workflow --separate --input=/workflows
 for id in xrabiaYTkTTQjDY4 C3Ew0OtmltX5dMDE BuBLvhHQEfmDExIe qGOZbSYnXWg9CR0O; do
   n8n publish:workflow --id="$id" || n8n update:workflow --id="$id" --active=true
