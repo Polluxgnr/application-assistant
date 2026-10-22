@@ -615,7 +615,8 @@
         -80
       ],
       "name": "Note Job",
-      "id": "3c4792ea-eb8d-48a5-8639-3ce3b73d8e70"
+      "id": "3c4792ea-eb8d-48a5-8639-3ce3b73d8e70",
+      "width": 1320
     },
     {
       "parameters": {
@@ -626,7 +627,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1872,
+        2080,
         48
       ],
       "name": "Payload: Job",
@@ -646,7 +647,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2080,
+        2288,
         48
       ],
       "name": "Run Analyzer",
@@ -681,7 +682,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2304,
+        2512,
         48
       ],
       "name": "No gaps?",
@@ -696,7 +697,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2528,
+        2736,
         32
       ],
       "name": "Payload: Direct Generate",
@@ -716,7 +717,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2752,
+        2960,
         32
       ],
       "name": "Run Generator (no questions)",
@@ -795,6 +796,64 @@
       "maxTries": 3,
       "waitBetweenTries": 3000,
       "id": "d00295af-c3ac-4928-a342-2cd46945481c"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "57996059-b232-4233-a675-b88ddf389104",
+              "leftValue": "={{ /^https?:\\/\\/\\S+$/i.test($('Verify & Parse').first().json.url) || $('Verify & Parse').first().json.text.length > 150 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1872,
+        48
+      ],
+      "name": "Valid /job input?",
+      "id": "66639d87-ae69-40dd-bf25-95b46c6cd316"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Verify & Parse').first().json.app_id }}/{{ $('Verify & Parse').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('ℹ️ Usage: `/job url:<link to the offer>` (must start with http:// or https://)\nor `/job text:<paste the full offer>` (a few lines at least).').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        -102
+      ],
+      "name": "Reply: Job Usage",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "b97bfa8c-ba7d-4df6-ba3f-9458c6c09a7f"
     }
   ],
   "pinData": {},
@@ -937,7 +996,7 @@
         ],
         [
           {
-            "node": "Payload: Job",
+            "node": "Valid /job input?",
             "type": "main",
             "index": 0
           }
@@ -1069,6 +1128,24 @@
         [
           {
             "node": "Reply: CV Saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid /job input?": {
+      "main": [
+        [
+          {
+            "node": "Payload: Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Job Usage",
             "type": "main",
             "index": 0
           }
