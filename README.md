@@ -1,5 +1,7 @@
 # Application Assistant
 
+http://localhost:5678/
+
 A Discord bot built with n8n that tailors my CV, cover letter and interview prep to each job offer. I upload my CV once, send an offer, answer one question about what's missing, and get back a tailored CV (PDF), a cover letter and a cheat sheet in Google Docs. What I confirm is remembered for the next offers.
 
 No-Code Software Development project, Pollux Gronier, ESSEC/CentraleSupélec AIDAMS, October 2026.
