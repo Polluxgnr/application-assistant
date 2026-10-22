@@ -80,7 +80,10 @@
           "id": "AOHwJRZXdD5IQR6Q",
           "name": "Discord Bot Auth"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     }
   ],
   "pinData": {},

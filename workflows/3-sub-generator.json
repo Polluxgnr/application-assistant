@@ -240,7 +240,9 @@
       "parameters": {
         "model": "google/gemini-3.5-flash",
         "options": {
-          "temperature": 0.1
+          "temperature": 0.1,
+          "maxRetries": 3,
+          "timeout": 60000
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
@@ -375,7 +377,9 @@
       "parameters": {
         "model": "google/gemini-3.5-flash",
         "options": {
-          "temperature": 0.6
+          "temperature": 0.6,
+          "maxRetries": 3,
+          "timeout": 60000
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
@@ -442,7 +446,9 @@
       "parameters": {
         "model": "google/gemini-3.5-flash",
         "options": {
-          "temperature": 0.8
+          "temperature": 0.8,
+          "maxRetries": 3,
+          "timeout": 60000
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
