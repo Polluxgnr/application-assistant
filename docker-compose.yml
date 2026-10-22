@@ -1,4 +1,4 @@
-# Application Assistant: self-hosted n8n + Postgres + Cloudflare quick tunnel.
+# Application Assistant: self-hosted n8n + Postgres + ngrok tunnel.
 # Start:  docker compose up -d      Stop: docker compose down      (named volumes keep all data)
 
 name: application-assistant
@@ -66,15 +66,18 @@ services:
       retries: 12
       start_period: 30s
 
-  # Public HTTPS URL for Discord's Interactions Endpoint (no account needed).
-  # URL: docker compose logs tunnel | grep trycloudflare
+  # Public HTTPS URL for Discord's Interactions Endpoint. ngrok gives every free account one
+  # fixed domain, so the URL never changes and Discord is set once.
+  # URL: docker compose logs tunnel | grep -o "https://[^ ]*ngrok[^ ]*"
   tunnel:
-    image: cloudflare/cloudflared:2026.10.2
+    image: ngrok/ngrok:3.39.11-alpine
     restart: unless-stopped
     depends_on:
       n8n:
         condition: service_healthy
-    command: tunnel --no-autoupdate --url http://n8n:5678
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: http n8n:5678 --log stdout --log-format logfmt
 
 volumes:
   pg_data:

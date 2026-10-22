@@ -65,7 +65,7 @@ docker compose exec n8n n8n import:workflow --separate --input=/workflows
 Then, in n8n:
 1. Create the credentials and select them in the nodes that show a warning: **Header Auth** `Discord Bot Auth` (`Authorization: Bot <token>`), **OpenRouter** (API key), **Google Drive OAuth2** and **Google Docs OAuth2** (same Google client, then *Sign in with Google*), **Postgres** (host `postgres`, database `assistant`, user and password from `.env`).
 2. Google Cloud: enable the Drive **and** Docs APIs, OAuth client "Web application" with redirect `http://localhost:5678/rest/oauth2-credential/callback`, and add your account as a test user.
-3. Discord needs a public HTTPS URL: the `tunnel` service gives one (`docker compose logs tunnel | grep trycloudflare`). Paste `<url>/webhook/application-assistant` in Discord Developer Portal → General Information → Interactions Endpoint URL.
+3. Discord needs a public HTTPS URL: the `tunnel` service (ngrok, free account; put `NGROK_AUTHTOKEN` in `.env`) gives one that never changes (`docker compose logs tunnel | grep url=`). Paste `<url>/webhook/application-assistant` once in Discord Developer Portal → General Information → Interactions Endpoint URL.
 4. Publish the workflows, run *0. Setup* once, then `/help` in Discord.
 
 Tested on 22 October 2026 from a fresh clone: Postgres healthy with the 4 tables, n8n `/healthz` 200, 6 workflows imported, still present after down / up.
