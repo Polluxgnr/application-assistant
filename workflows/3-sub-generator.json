@@ -498,7 +498,7 @@
         },
         "folderId": {
           "__rl": true,
-          "value": "1l8jvomhFde1HWJdgng3z6jD5cQoy5gfH",
+          "value": "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}",
           "mode": "id"
         },
         "options": {}
@@ -526,7 +526,7 @@
         "operation": "copy",
         "fileId": {
           "__rl": true,
-          "value": "1kYEynYslsx-8eZxO0_utgpyqiexieN0b9zko-pLPf-Y",
+          "value": "={{ $env.GOOGLE_CV_TEMPLATE_ID }}",
           "mode": "id"
         },
         "name": "=CV - {{ $('Prepare Resume Data').first().json.safe_name }}",

@@ -30,7 +30,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ADMIN_CHANNEL_ID = '1559918396273852446';\nconst ex = $json.execution || {};\nconst msg = [\n  '🛑 **' + ($json.workflow?.name || 'Workflow') + '** failed',\n  'Node: `' + (ex.lastNodeExecuted || '?') + '`',\n  'Error: ' + String(ex.error?.message || 'unknown').slice(0, 800),\n  ex.url ? 'Execution: ' + ex.url : 'Execution id: ' + ex.id,\n].join('\\n');\n// Main fails on its Run Analyzer / Run Generator node when a sub-workflow failed: that sub-workflow already alerted me\nconst already_alerted = /^Run (Analyzer|Generator)/.test(ex.lastNodeExecuted || '');\nreturn [{ json: { admin_channel_id: ADMIN_CHANNEL_ID, admin_message: msg, execution_id: String(ex.id || ''), failed_node: ex.lastNodeExecuted || '', already_alerted } }];"
+        "jsCode": "const ADMIN_CHANNEL_ID = $env.DISCORD_ADMIN_CHANNEL_ID; // set in .env\nconst ex = $json.execution || {};\nconst msg = [\n  '🛑 **' + ($json.workflow?.name || 'Workflow') + '** failed',\n  'Node: `' + (ex.lastNodeExecuted || '?') + '`',\n  'Error: ' + String(ex.error?.message || 'unknown').slice(0, 800),\n  ex.url ? 'Execution: ' + ex.url : 'Execution id: ' + ex.id,\n].join('\\n');\n// Main fails on its Run Analyzer / Run Generator node when a sub-workflow failed: that sub-workflow already alerted me\nconst already_alerted = /^Run (Analyzer|Generator)/.test(ex.lastNodeExecuted || '');\nreturn [{ json: { admin_channel_id: ADMIN_CHANNEL_ID, admin_message: msg, execution_id: String(ex.id || ''), failed_node: ex.lastNodeExecuted || '', already_alerted } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
