@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-22T13:47:30.966Z",
+  "updatedAt": "2026-10-22T13:53:50.060Z",
   "createdAt": "2026-10-22T12:11:32.306Z",
   "id": "xrabiaYTkTTQjDY4",
   "name": "4. Error Handler",
@@ -284,8 +284,8 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "c875c6cb-1710-4742-ad4d-0a080fc57fcf",
-  "activeVersionId": "c875c6cb-1710-4742-ad4d-0a080fc57fcf",
+  "versionId": "aa8184a4-842f-4c2e-931c-8bfd0cc1f3ba",
+  "activeVersionId": "aa8184a4-842f-4c2e-931c-8bfd0cc1f3ba",
   "versionCounter": 2,
   "triggerCount": 0,
   "sourceWorkflowId": null,

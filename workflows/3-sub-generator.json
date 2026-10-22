@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-22T13:47:42.878Z",
+  "updatedAt": "2026-10-22T13:54:08.768Z",
   "createdAt": "2026-10-22T12:11:32.306Z",
   "id": "BuBLvhHQEfmDExIe",
   "name": "3. Sub – Generator (CV, letter, cheat sheet)",
@@ -10,15 +10,15 @@
     {
       "parameters": {
         "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. The raw answer is remembered first: **the same answer twice is not processed twice** (idempotent). New facts are saved permanently in `facts` (unique key).",
-        "height": 200,
-        "width": 1560,
+        "height": 820,
+        "width": 2660,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -48,
-        -240
+        -140
       ],
       "name": "G1",
       "id": "7fa91d65-3261-491d-bd41-6c9fee41f8e2"
@@ -26,15 +26,15 @@
     {
       "parameters": {
         "content": "## Generator · part 2 — write\nTailored CV sections (fixed Google Docs template) + cover letter + interview cheat sheet.",
-        "height": 200,
-        "width": 1300,
+        "height": 820,
+        "width": 980,
         "color": 6
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1568,
-        -240
+        2660,
+        -140
       ],
       "name": "G2",
       "id": "95362deb-d9d6-4662-8dec-a16004b7784b"
@@ -42,14 +42,15 @@
     {
       "parameters": {
         "content": "## Generator · part 3 — publish\nDrive folder → CV from template → Docs for letter & cheat sheet → session `done` → PDF sent back on Discord.",
-        "width": 2300,
-        "color": 5
+        "width": 2500,
+        "color": 5,
+        "height": 300
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1568,
-        384
+        1560,
+        720
       ],
       "name": "G3",
       "id": "b3e10e3a-f4e1-4987-b76a-7fe9ddc6ccb8"
@@ -90,7 +91,7 @@
       "typeVersion": 1.1,
       "position": [
         0,
-        128
+        200
       ],
       "name": "Start",
       "id": "358f30be-3a50-4674-940b-54f1cea71362"
@@ -107,7 +108,7 @@
       "typeVersion": 2.6,
       "position": [
         224,
-        128
+        200
       ],
       "name": "DB: My Session",
       "id": "27494d5b-c758-45ab-8530-59815e031b4c",
@@ -130,7 +131,7 @@
       "typeVersion": 2,
       "position": [
         448,
-        128
+        200
       ],
       "name": "Load Session",
       "id": "9442becd-2029-4cba-a847-8067384e4295"
@@ -165,7 +166,7 @@
       "typeVersion": 2.3,
       "position": [
         672,
-        128
+        200
       ],
       "name": "Job in progress?",
       "id": "3ea6752c-5cf6-4dac-9d05-c9b2f9fc9e6d"
@@ -184,8 +185,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
-        320
+        672,
+        440
       ],
       "name": "Reply: No Job Yet",
       "retryOnFail": true,
@@ -210,8 +211,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1104,
-        320
+        896,
+        440
       ],
       "name": "Return: no_job",
       "id": "fb7a312f-4aaa-4778-b145-31e299b7f385"
@@ -245,8 +246,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        880,
-        112
+        896,
+        200
       ],
       "name": "Answer given?",
       "id": "0f749405-4551-4dc1-91a4-d12fde43b966"
@@ -261,8 +262,8 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        1104,
-        -16
+        1568,
+        60
       ],
       "name": "AI: Extract New Skills",
       "retryOnFail": true,
@@ -283,8 +284,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        1104,
-        192
+        1520,
+        260
       ],
       "name": "Gemini · Extract New Skills",
       "id": "34785cea-552a-4cd2-b6b3-cdcfb413901f",
@@ -302,8 +303,8 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1264,
-        192
+        1680,
+        260
       ],
       "name": "Schema · Extract New Skills",
       "id": "bbd3c870-1fb7-4dd3-9c61-fdacff15f7cf"
@@ -315,8 +316,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1328,
-        -16
+        1792,
+        60
       ],
       "name": "Split Facts",
       "id": "5287e5cd-e7c3-484c-b6f7-16f841e9242c"
@@ -332,8 +333,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1552,
-        -16
+        2016,
+        60
       ],
       "name": "DB: Save New Facts",
       "id": "9d2f3076-3afb-4149-8688-a3c257f9443b",
@@ -359,8 +360,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1760,
-        112
+        2240,
+        200
       ],
       "name": "DB: All My Facts",
       "id": "ebde486f-e446-48d1-be5a-3ed9a2f58602",
@@ -383,8 +384,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1984,
-        112
+        2464,
+        200
       ],
       "name": "Build Profile",
       "id": "bc52b03e-3aa3-4101-bb1c-332a206ad116"
@@ -399,8 +400,8 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2208,
-        112
+        2752,
+        200
       ],
       "name": "AI: Tailor CV",
       "retryOnFail": true,
@@ -421,8 +422,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        2208,
-        304
+        2704,
+        400
       ],
       "name": "Gemini · Tailor CV",
       "id": "24b981ac-6916-4497-97c3-5129192743d2",
@@ -440,8 +441,8 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2368,
-        304
+        2864,
+        400
       ],
       "name": "Schema · Tailor CV",
       "id": "205b346d-93da-4e4e-83fa-3fb3949e56e7"
@@ -453,8 +454,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2528,
-        112
+        2976,
+        200
       ],
       "name": "Prepare Resume Data",
       "id": "3e0717e0-c480-48a9-a7d4-0fc9f8772c93"
@@ -469,8 +470,8 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2752,
-        112
+        3200,
+        200
       ],
       "name": "AI: Cover Letter & Cheat Sheet",
       "retryOnFail": true,
@@ -491,8 +492,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        2752,
-        304
+        3152,
+        400
       ],
       "name": "Gemini · Cover Letter & Cheat Sheet",
       "id": "72fb7dee-77b4-4b34-bda9-a2bc3df88635",
@@ -510,8 +511,8 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2912,
-        304
+        3312,
+        400
       ],
       "name": "Schema · Cover Letter & Cheat Sheet",
       "id": "9ac06828-3027-4dfb-9dd2-c4e46881e124"
@@ -523,8 +524,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3072,
-        112
+        3424,
+        200
       ],
       "name": "Code: Format Output",
       "id": "911a5902-d870-4b6c-8e29-cf6843d7c428"
@@ -550,7 +551,7 @@
       "typeVersion": 3,
       "position": [
         1600,
-        608
+        820
       ],
       "name": "Drive: Create Folder",
       "retryOnFail": true,
@@ -590,7 +591,7 @@
       "typeVersion": 3,
       "position": [
         1824,
-        608
+        820
       ],
       "name": "Drive: Copy CV Template",
       "retryOnFail": true,
@@ -647,7 +648,7 @@
       "typeVersion": 2,
       "position": [
         2048,
-        608
+        820
       ],
       "name": "Docs: Fill CV",
       "retryOnFail": true,
@@ -670,7 +671,7 @@
       "typeVersion": 2,
       "position": [
         2272,
-        608
+        820
       ],
       "name": "Docs: Create Letter",
       "retryOnFail": true,
@@ -700,8 +701,8 @@
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        2480,
-        608
+        2496,
+        820
       ],
       "name": "Docs: Write Letter",
       "retryOnFail": true,
@@ -723,8 +724,8 @@
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        2704,
-        608
+        2720,
+        820
       ],
       "name": "Docs: Create Cheat",
       "retryOnFail": true,
@@ -754,8 +755,8 @@
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        2928,
-        608
+        2944,
+        820
       ],
       "name": "Docs: Write Cheat",
       "retryOnFail": true,
@@ -780,8 +781,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        3152,
-        608
+        3168,
+        820
       ],
       "name": "DB: Session = done",
       "id": "9dd967b1-9bbd-4ac6-9c64-dfa8d6e6c4a0",
@@ -817,8 +818,8 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        3360,
-        608
+        3392,
+        820
       ],
       "name": "Drive: Export CV PDF",
       "retryOnFail": true,
@@ -859,8 +860,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3584,
-        608
+        3616,
+        820
       ],
       "name": "Reply: Send Documents",
       "retryOnFail": true,
@@ -885,8 +886,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3808,
-        608
+        3840,
+        820
       ],
       "name": "Return: done",
       "id": "bd249963-24ad-468a-b193-b4b7bc174d12"
@@ -905,8 +906,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2432,
-        -148
+        2976,
+        0
       ],
       "name": "Reply: Writing Failed",
       "retryOnFail": true,
@@ -931,8 +932,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2656,
-        -148
+        3200,
+        0
       ],
       "name": "Return: ai_failed",
       "id": "95a73902-080f-49ee-b399-4c4223aad808"
@@ -948,8 +949,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        884,
-        -216
+        1120,
+        60
       ],
       "name": "DB: Remember Answer",
       "id": "b4396ae5-be89-4444-87e7-1379c8e09bbd",
@@ -993,8 +994,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1104,
-        -216
+        1344,
+        60
       ],
       "name": "New answer?",
       "id": "6a2a1b33-a8d9-444b-9e34-ee8fe8eaedb4"
@@ -1442,9 +1443,9 @@
       }
     ]
   },
-  "versionId": "279848c1-9523-49e4-b84e-50d93eaa6f9a",
-  "activeVersionId": "279848c1-9523-49e4-b84e-50d93eaa6f9a",
-  "versionCounter": 3,
+  "versionId": "014ca296-c538-491b-811e-c257de0706e3",
+  "activeVersionId": "014ca296-c538-491b-811e-c257de0706e3",
+  "versionCounter": 4,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],
