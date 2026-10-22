@@ -511,7 +511,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "db5a14d0-eb37-4067-882a-3e4990258a26"
+      "id": "db5a14d0-eb37-4067-882a-3e4990258a26",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -771,6 +772,29 @@
       ],
       "name": "Run Generator",
       "id": "e4459ba3-3104-4f53-a5a7-ac94b4543834"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Verify & Parse').first().json.app_id }}/{{ $('Verify & Parse').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('⚠️ I could not read your CV (scanned image or unusual layout). Please send a text-based PDF with `/cv file:<cv.pdf>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2752,
+        60
+      ],
+      "name": "Reply: CV Not Readable",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "d00295af-c3ac-4928-a342-2cd46945481c"
     }
   ],
   "pinData": {},
@@ -972,6 +996,13 @@
         [
           {
             "node": "DB: Save Profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: CV Not Readable",
             "type": "main",
             "index": 0
           }

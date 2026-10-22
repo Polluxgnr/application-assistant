@@ -358,7 +358,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "2ede36e6-0b0a-4e1f-96ef-e8c2595a20e0"
+      "id": "2ede36e6-0b0a-4e1f-96ef-e8c2595a20e0",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -461,7 +462,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "b20239da-f107-4f77-924f-4f024159b0f3"
+      "id": "b20239da-f107-4f77-924f-4f024159b0f3",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -492,13 +494,13 @@
         "operation": "executeQuery",
         "query": "INSERT INTO sessions (user_id, state, job_url, job_json, job_text, missing_json, question, match_score)\nVALUES ($1, 'waiting', $2, $3::jsonb, $4, $5::jsonb, $6, $7)\nON CONFLICT (user_id) DO UPDATE SET\n  state = EXCLUDED.state, job_url = EXCLUDED.job_url, job_json = EXCLUDED.job_json,\n  job_text = EXCLUDED.job_text, missing_json = EXCLUDED.missing_json,\n  question = EXCLUDED.question, match_score = EXCLUDED.match_score, updated_at = now()\nRETURNING user_id, state;",
         "options": {
-          "queryReplacement": "={{ [ $('Code: Gap Analysis').first().json.user_id, $('Code: Gap Analysis').first().json.url || '', JSON.stringify($('Code: Gap Analysis').first().json.offer), ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000), JSON.stringify($('Code: Gap Analysis').first().json.missing_all), $('AI: Draft Question').first().json.text, $('Code: Gap Analysis').first().json.match_score ] }}"
+          "queryReplacement": "={{ [ $('Code: Gap Analysis').first().json.user_id, $('Code: Gap Analysis').first().json.url || '', JSON.stringify($('Code: Gap Analysis').first().json.offer), ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000), JSON.stringify($('Code: Gap Analysis').first().json.missing_all), $('Question (with fallback)').first().json.text, $('Code: Gap Analysis').first().json.match_score ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        2848,
+        3040,
         -128
       ],
       "name": "DB: Session = waiting",
@@ -520,7 +522,7 @@
         "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: String('🔎 **' + $('Code: Gap Analysis').first().json.offer.role_title + ' @ ' + $('Code: Gap Analysis').first().json.offer.company + '** — first match: ' + $('Code: Gap Analysis').first().json.match_score + '/10\\n✅ ' + ($('Code: Gap Analysis').first().json.matched.join(', ') || '—') + '\\n❔ ' + $('Code: Gap Analysis').first().json.missing.join(', ') + '\\n\\n' + $('AI: Draft Question').first().json.text + '\\n\\n↳ Reply with `/answer text:...`').slice(0, 1990) }) }}",
+        "jsonBody": "={{ JSON.stringify({ content: String('🔎 **' + $('Code: Gap Analysis').first().json.offer.role_title + ' @ ' + $('Code: Gap Analysis').first().json.offer.company + '** — first match: ' + $('Code: Gap Analysis').first().json.match_score + '/10\\n✅ ' + ($('Code: Gap Analysis').first().json.matched.join(', ') || '—') + '\\n❔ ' + $('Code: Gap Analysis').first().json.missing.join(', ') + '\\n\\n' + $('Question (with fallback)').first().json.text + '\\n\\n↳ Reply with `/answer text:...`').slice(0, 1990) }) }}",
         "options": {
           "timeout": 15000
         }
@@ -528,7 +530,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3072,
+        3264,
         -128
       ],
       "name": "Reply: Ask Question",
@@ -554,7 +556,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3280,
+        3472,
         -128
       ],
       "name": "Return: asked",
@@ -609,6 +611,75 @@
       ],
       "name": "Return: no_gaps",
       "id": "e3899a5e-d49c-4465-a8ee-3d2acc661f37"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('⚠️ I could not analyse this offer. Please try `/job text:<paste the offer>`.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        -220
+      ],
+      "name": "Reply: Offer Not Understood",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "e227687a-cc59-4a4f-9ba8-133689f1249e"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "53b5c7d2-054f-4e09-9682-cb6d44e02b39",
+              "name": "status",
+              "value": "ai_failed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1984,
+        -220
+      ],
+      "name": "Return: ai_failed",
+      "id": "6909a457-672d-4a2a-ab21-3e92d435273b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "deecde29-dd79-4501-a9c5-26be46681a7c",
+              "name": "text",
+              "type": "string",
+              "value": "={{ ($json.text || '').trim() || 'Do you have any experience with ' + $('Code: Gap Analysis').first().json.missing.join(', ') + '? Please give one concrete example (project, course, job or tool).' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2720,
+        -128
+      ],
+      "name": "Question (with fallback)",
+      "id": "0be525b3-0ff5-4b44-9639-30abab0f1ca2"
     }
   ],
   "pinData": {},
@@ -803,6 +874,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Reply: Offer Not Understood",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -839,7 +917,14 @@
       "main": [
         [
           {
-            "node": "DB: Session = waiting",
+            "node": "Question (with fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Question (with fallback)",
             "type": "main",
             "index": 0
           }
@@ -873,6 +958,28 @@
         [
           {
             "node": "Return: no_gaps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Offer Not Understood": {
+      "main": [
+        [
+          {
+            "node": "Return: ai_failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question (with fallback)": {
+      "main": [
+        [
+          {
+            "node": "DB: Session = waiting",
             "type": "main",
             "index": 0
           }

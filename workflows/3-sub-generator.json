@@ -234,7 +234,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "8bab1c05-7e02-4b74-ba08-edded4708186"
+      "id": "8bab1c05-7e02-4b74-ba08-edded4708186",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -371,7 +372,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "d42aa878-82fc-4577-8113-e9bafbf8bab4"
+      "id": "d42aa878-82fc-4577-8113-e9bafbf8bab4",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -440,7 +442,8 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 3000,
-      "id": "60e4382e-f33d-4394-a5b6-3a1ecb0adb79"
+      "id": "60e4382e-f33d-4394-a5b6-3a1ecb0adb79",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -853,6 +856,52 @@
       ],
       "name": "Return: done",
       "id": "bd249963-24ad-468a-b193-b4b7bc174d12"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://discord.com/api/v10/webhooks/{{ $('Start').first().json.app_id }}/{{ $('Start').first().json.token }}/messages/@original",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: String('⚠️ The AI could not write valid documents this time. Nothing is lost: your answer is saved, just send `/answer` again in a minute.').slice(0, 1990) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2432,
+        -148
+      ],
+      "name": "Reply: Writing Failed",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "a03f39de-dc7f-4269-934d-a5201a11ffd4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "321bb051-2393-4ba1-b97b-50785acf752a",
+              "name": "status",
+              "value": "ai_failed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2656,
+        -148
+      ],
+      "name": "Return: ai_failed",
+      "id": "95a73902-080f-49ee-b399-4c4223aad808"
     }
   ],
   "pinData": {},
@@ -1011,6 +1060,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Split Facts",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -1066,6 +1122,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Reply: Writing Failed",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -1085,6 +1148,13 @@
         [
           {
             "node": "Code: Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Writing Failed",
             "type": "main",
             "index": 0
           }
@@ -1206,6 +1276,17 @@
         [
           {
             "node": "Return: done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply: Writing Failed": {
+      "main": [
+        [
+          {
+            "node": "Return: ai_failed",
             "type": "main",
             "index": 0
           }
