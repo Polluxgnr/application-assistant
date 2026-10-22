@@ -50,7 +50,35 @@
     },
     {
       "parameters": {
-        "inputSource": "passthrough"
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "user_id",
+              "type": "string"
+            },
+            {
+              "name": "app_id",
+              "type": "string"
+            },
+            {
+              "name": "token",
+              "type": "string"
+            },
+            {
+              "name": "url",
+              "type": "string"
+            },
+            {
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "name": "answer",
+              "type": "string"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -904,7 +932,20 @@
       "id": "95a73902-080f-49ee-b399-4c4223aad808"
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "user_id": "724615934689411174",
+          "app_id": "TEST",
+          "token": "TEST",
+          "url": "",
+          "text": "",
+          "answer": "I used Agile (Scrum) during my graduation project: two-week sprints with a Trello board."
+        }
+      }
+    ]
+  },
   "connections": {
     "Gemini · Extract New Skills": {
       "ai_languageModel": [
