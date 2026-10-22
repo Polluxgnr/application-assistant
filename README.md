@@ -74,6 +74,20 @@ Schema: [`db/init/01-assistant-db.sh`](db/init/01-assistant-db.sh).
 
 ---
 
+## Screenshots
+
+| Main (router) | Analyzer (sub-workflow) |
+|---|---|
+| ![Main](docs/screenshots/1-main.jpg) | ![Analyzer](docs/screenshots/2-analyzer.jpg) |
+| **Generator (sub-workflow)** | **Error Handler** |
+| ![Generator](docs/screenshots/3-generator.jpg) | ![Error Handler](docs/screenshots/4-error-handler.jpg) |
+| **`/job` in Discord** | **`/answer` in Discord** |
+| ![job](docs/screenshots/6-discord-job.jpg) | ![answer](docs/screenshots/7-discord-answer.jpg) |
+
+![Executions](docs/screenshots/5-executions.jpg)
+
+---
+
 ## Quick start (from a fresh clone)
 
 **Requirements:** Docker Desktop (WSL 2 on Windows), Git Bash or any bash, a Discord application with a bot, an OpenRouter API key, a Google Cloud OAuth client (Drive + Docs APIs).
@@ -116,17 +130,22 @@ Stop with `docker compose down` and start again with `docker compose up -d`: wor
 
 ## Credentials
 
-`scripts/import.sh` imports **placeholders** (names and ids only, no secrets) so every node is already linked. Open *Credentials* in n8n and fill them:
+Every node is already linked to a credential by id (`credentials/stubs.json` holds names and ids only, no secrets). You only paste **4 secrets in `.env`**; `scripts/import.sh` loads them into n8n **once** (re-running it never overwrites them, which would erase the Google sign-in; force with `FORCE_SECRETS=1`).
 
-| Credential | Type | What to paste |
+| `.env` variable | Becomes the n8n credential | Where to get it |
 |---|---|---|
-| Discord Bot Auth | Header Auth | Name `Authorization`, value `Bot <your bot token>` |
-| OpenRouter account 2 | OpenRouter | API key |
-| Google Drive account | Google Drive OAuth2 | Client ID + secret, then *Sign in with Google* |
-| Google Docs account | Google Docs OAuth2 | Same client, then *Sign in with Google* |
-| Assistant DB (Postgres) | Postgres | Nothing: generated from `.env` |
+| `DISCORD_BOT_TOKEN` | Discord Bot Auth (Header Auth `Authorization: Bot …`) | Developer Portal → your app → Bot → Reset Token |
+| `OPENROUTER_API_KEY` | OpenRouter account 2 | openrouter.ai → Keys |
+| `GOOGLE_OAUTH_CLIENT_ID` / `_SECRET` | Google Drive account + Google Docs account | Google Cloud → Google Auth Platform → Clients |
+| *(nothing)* | Assistant DB (Postgres) | generated from `.env` |
 
-Google OAuth client: Google Cloud Console → enable *Google Drive API* and *Google Docs API* → OAuth consent screen (External, add yourself as test user) → Credentials → *OAuth client ID* (Web application) with redirect URI `http://localhost:5678/rest/oauth2-credential/callback`.
+Then open each Google credential in n8n and click **Sign in with Google** (once each).
+
+**Google Cloud checklist** (each one cost me a failed run):
+1. Enable **both** the *Google Drive API* and the *Google Docs API* in the project (otherwise: "Forbidden" on *Docs: Fill CV*).
+2. OAuth client of type **Web application** with redirect URI `http://localhost:5678/rest/oauth2-credential/callback`.
+3. Consent screen in testing mode: add the Google account that owns the CV template as a **test user** (otherwise: `403 access_denied`).
+4. Sign in from a normal browser: the sign-in opens a pop-up (an embedded browser that blocks pop-ups fails).
 
 ---
 
@@ -149,14 +168,32 @@ Google OAuth client: Google Cloud Console → enable *Google Drive API* and *Goo
 
 **Idempotency check:** send the same `/answer` twice → the second one is refused ("no job in progress"); confirming the same skill in two applications → still one row in `facts`.
 
-**Failure test:** stop the AI key (wrong OpenRouter key in the credential) and send `/job` → the user gets a friendly message and the admin channel gets an alert with the workflow name, the failed node and the execution URL.
+**Failure test:** `/job url:https://this-does-not-exist.invalid/job` → the HTTP request retries 3 times, then the user gets "I couldn't read that page… use `/job text:`". Any unexpected failure (e.g. a Google API disabled) reaches the Error Handler: the user gets "something went wrong" and the admin channel gets one alert with the workflow name, the failed node and the execution URL.
+
+**Warm-up:** right after `docker compose up`, send `/help` once. The very first command after a (re)start can take more than Discord's 3 seconds.
+
+### Test results (22 October 2026, local stack, through Discord)
+
+| Test | Input | Result |
+|---|---|---|
+| Help | `/help` | Usage message, instant |
+| CV | `/cv` with a text PDF | "CV saved: 29 skills/tools, 6 experiences" |
+| Data Engineering (Qonto, Lever link) | `/job url:` + `/answer` | 7/10, one question; CV PDF + letter + cheat sheet |
+| Data Scientist (Ipsos, Welcome to the Jungle link) | `/job url:` + `/answer` (a gap: no unsupervised learning) | 9/10; the letter states the gap, the CV doesn't claim it |
+| Data Analyst (Papernest, French offer pasted) | `/job text:` + `/answer` | 9/10; question and letter in French |
+| Data Analyst (Batch, French) | `/job url:` + `/answer` | 7/10; date and addressee in French |
+| Invalid input | `/job url:hello` | Usage message |
+| Unreachable page | `/job url:https://this-does-not-exist.invalid/job` | 3 retries, then "paste the text" |
+| Idempotency | same `/answer` twice | Second one: "no job in progress"; no duplicate row |
+| Error workflow | Google Docs API disabled (real incident) | User told, one admin alert with node and execution URL |
 
 ---
 
 ## Design choices
 - **Slash commands + webhook**, not a message trigger: reading messages needs a permanent Gateway connection; interactions are plain signed HTTP POSTs and arrive already structured (file, url, text).
 - **Answer fast, finish later:** the deferred response is the only way to run minute-long AI work behind Discord's 3-second limit.
-- **AI reads, code decides:** the AI turns messy text (CV, offer, answer) into JSON; Code nodes compare, score and format. Deterministic, free and explainable.
+- **AI reads, code decides:** the AI turns messy text (CV, offer, answer) into JSON; Code nodes compare, score and format. Deterministic, free and explainable. For each requirement the AI also suggests strict synonyms or proving tools ("Neural networks" → deep learning, PyTorch); the Code node still decides, with whole-word matching.
+- **Idempotent by design:** unique keys and upserts in Postgres, each answer remembered (the same answer is never processed twice), and a finished job can't be answered again.
 - **LLM Chains, not an AI Agent:** the steps are fixed; a chain with a Structured Output Parser gives typed JSON, an agent would be slower, costlier and less predictable.
 - **Fill a template, don't generate a CV:** the AI writes only 5 fields of the real CV, so layout and dates can't break.
 - **Four guards against invented facts:** 5 fields only; known gaps and "requirements not on the CV" listed as *never claim*; prompts forbid new skills, numbers and motivations; `[add your detail]` instead of invention in the cheat sheet.
