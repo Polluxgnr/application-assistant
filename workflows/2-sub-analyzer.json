@@ -1,5 +1,11 @@
 {
-  "name": "AA | 2. Sub – Analyzer (skill gaps)",
+  "updatedAt": "2026-10-22T13:47:37.250Z",
+  "createdAt": "2026-10-22T12:11:32.306Z",
+  "id": "C3Ew0OtmltX5dMDE",
+  "name": "2. Sub – Analyzer (skill gaps)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -710,20 +716,6 @@
       "id": "0be525b3-0ff5-4b44-9639-30abab0f1ca2"
     }
   ],
-  "pinData": {
-    "Start": [
-      {
-        "json": {
-          "user_id": "724615934689411174",
-          "app_id": "TEST",
-          "token": "TEST",
-          "url": "",
-          "text": "Data Analyst - Internship - Ledger (Paris). The Analytics Engineering team transforms raw data into insights with Snowflake, SQL and dbt, and Tableau / GA4 for reporting; strategic analysis in Python and tactical AI initiatives. You will create AI tutorials for non-technical teams, handle data requests, reduce technical debt in core models and industrialize causal impact analyses in Python. We look for a Master's student (M2) in Data Science, strong SQL and Python for statistical analysis and Machine Learning, dbt and Tableau experience, curiosity for Generative AI, autonomy and a pedagogical mindset.",
-          "answer": ""
-        }
-      }
-    ]
-  },
   "connections": {
     "Gemini · Extract Offer": {
       "ai_languageModel": [
@@ -1028,17 +1020,58 @@
       ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "errorWorkflow": "xrabiaYTkTTQjDY4"
   },
-  "versionId": "3de34102-db39-4a8f-bb8b-73aec8e7fb51",
+  "staticData": null,
   "meta": {
     "instanceId": "0a54b8f9d522314b8da06bc1a2c14800ac59f3d3fa7a45ac649be8b062675819"
   },
   "nodeGroups": [],
-  "id": "C3Ew0OtmltX5dMDE",
-  "tags": []
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "user_id": "724615934689411174",
+          "app_id": "TEST",
+          "token": "TEST",
+          "url": "",
+          "text": "Data Analyst - Internship - Ledger (Paris). The Analytics Engineering team transforms raw data into insights with Snowflake, SQL and dbt, and Tableau / GA4 for reporting; strategic analysis in Python and tactical AI initiatives. You will create AI tutorials for non-technical teams, handle data requests, reduce technical debt in core models and industrialize causal impact analyses in Python. We look for a Master's student (M2) in Data Science, strong SQL and Python for statistical analysis and Machine Learning, dbt and Tableau experience, curiosity for Generative AI, autonomy and a pedagogical mindset.",
+          "answer": ""
+        }
+      }
+    ]
+  },
+  "versionId": "7e9c798a-6df6-4573-b2b6-14575d4e37c4",
+  "activeVersionId": "7e9c798a-6df6-4573-b2b6-14575d4e37c4",
+  "versionCounter": 3,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-22T12:11:32.306Z",
+      "createdAt": "2026-10-22T12:11:32.306Z",
+      "role": "workflow:owner",
+      "workflowId": "C3Ew0OtmltX5dMDE",
+      "projectId": "aAvwO3pQiZ0TS8Ik",
+      "project": {
+        "updatedAt": "2026-10-22T12:38:46.082Z",
+        "createdAt": "2026-10-22T12:10:28.155Z",
+        "id": "aAvwO3pQiZ0TS8Ik",
+        "name": "pollux gronier <b00822392@essec.edu>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "356b372d-68fa-4992-99ac-d4d8b5c15b81"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
 }

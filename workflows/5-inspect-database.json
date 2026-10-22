@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-10-22T13:47:24.650Z",
+  "createdAt": "2026-10-22T12:11:32.306Z",
+  "id": "InspectDbView001",
   "name": "5. Inspect – Project database",
+  "description": null,
+  "active": false,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -129,7 +135,6 @@
       "alwaysOutputData": true
     }
   ],
-  "pinData": {},
   "connections": {
     "Show tables": {
       "main": [
@@ -158,11 +163,41 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "9157bba4-def5-40b8-98e8-f0fe568da7e5",
-  "id": "InspectDbView001",
-  "tags": []
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "4f479fe1-29e1-4c97-b88c-1be4b5760ec8",
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-10-22T12:11:32.306Z",
+      "createdAt": "2026-10-22T12:11:32.306Z",
+      "role": "workflow:owner",
+      "workflowId": "InspectDbView001",
+      "projectId": "aAvwO3pQiZ0TS8Ik",
+      "project": {
+        "updatedAt": "2026-10-22T12:38:46.082Z",
+        "createdAt": "2026-10-22T12:10:28.155Z",
+        "id": "aAvwO3pQiZ0TS8Ik",
+        "name": "pollux gronier <b00822392@essec.edu>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "356b372d-68fa-4992-99ac-d4d8b5c15b81"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
 }
