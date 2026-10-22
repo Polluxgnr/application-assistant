@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. New skills are saved **permanently** in `facts`.",
+        "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. New facts are saved **permanently** in `facts` (unique key: saving the same fact twice does nothing).",
         "height": 200,
         "width": 1560,
         "color": 4
@@ -63,34 +63,30 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "VGBqX7I8stxaiuxa",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Start').first().json.user_id }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT user_id, state, job_url, job_json::text AS job_json, job_text,\n       missing_json::text AS missing_json, question,\n       COALESCE(match_score::text, '') AS match_score\nFROM sessions WHERE user_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('Start').first().json.user_id ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         224,
         128
       ],
       "name": "DB: My Session",
-      "alwaysOutputData": true,
-      "id": "e50af1c0-0f74-4edd-9cf8-98977ec9e7bb"
+      "id": "27494d5b-c758-45ab-8530-59815e031b4c",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -290,120 +286,58 @@
     },
     {
       "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "1bu0xnmV2dSqQTNB",
-          "mode": "list",
-          "cachedResultName": "facts",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $json.user_id }}",
-            "kind": "={{ $json.kind }}",
-            "value": "={{ $json.value }}",
-            "source": "answer",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "kind",
-              "displayName": "kind",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "value",
-              "displayName": "value",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "source",
-              "displayName": "source",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "INSERT INTO facts (user_id, kind, value, source)\nVALUES ($1, CASE WHEN $2 IN ('skill', 'experience', 'gap') THEN $2 ELSE 'answer' END, $3, 'answer')\nON CONFLICT (user_id, kind, value_hash) DO NOTHING\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.user_id, $json.kind, $json.value ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         1552,
         -16
       ],
       "name": "DB: Save New Facts",
-      "id": "349c30a4-f799-44b8-bc53-145edd61d829"
+      "id": "9d2f3076-3afb-4149-8688-a3c257f9443b",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "1bu0xnmV2dSqQTNB",
-          "mode": "list",
-          "cachedResultName": "facts",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Load Session').first().json.user_id }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT 'base_cv' AS kind, base_cv AS value FROM profiles WHERE user_id = $1\nUNION ALL\nSELECT 'cv_profile', cv_profile::text FROM profiles WHERE user_id = $1\nUNION ALL\nSELECT kind, value FROM facts WHERE user_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('Load Session').first().json.user_id ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         1760,
         112
       ],
       "name": "DB: All My Facts",
+      "id": "ebde486f-e446-48d1-be5a-3ed9a2f58602",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
       "alwaysOutputData": true,
-      "executeOnce": true,
-      "id": "a0654cc3-d792-4a3f-92a7-958593bc0b2f"
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -794,66 +728,31 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "dataTableId": {
-          "__rl": true,
-          "value": "VGBqX7I8stxaiuxa",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Load Session').first().json.user_id }}"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "state": "done",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "state",
-              "displayName": "state",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "UPDATE sessions SET state = 'done', updated_at = now()\nWHERE user_id = $1\nRETURNING user_id;",
+        "options": {
+          "queryReplacement": "={{ [ $('Load Session').first().json.user_id ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         3152,
         608
       ],
       "name": "DB: Session = done",
-      "executeOnce": true,
-      "id": "d61452d2-2a46-47cb-9077-adb2243ed240"
+      "id": "9dd967b1-9bbd-4ac6-9c64-dfa8d6e6c4a0",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
     },
     {
       "parameters": {

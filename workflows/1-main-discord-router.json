@@ -35,7 +35,7 @@
     },
     {
       "parameters": {
-        "content": "## 3 · /cv — ingest the base CV once\nDownload the PDF → extract text → AI parses it to JSON → stored in the `facts` table.",
+        "content": "## 3 · /cv — ingest the base CV once\nDownload the PDF → extract text → AI parses it to JSON → upserted in the `profiles` table (Postgres).",
         "height": 300,
         "width": 1700,
         "color": 5
@@ -283,99 +283,30 @@
     },
     {
       "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "1JJJUwEyw7jAlHNl",
-          "mode": "list",
-          "cachedResultName": "runs",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1JJJUwEyw7jAlHNl"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "execution_id": "={{ $execution.id }}",
-            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
-            "app_id": "={{ $('Verify & Parse').first().json.app_id }}",
-            "token": "={{ $('Verify & Parse').first().json.token }}",
-            "command": "={{ $('Verify & Parse').first().json.command }}",
-            "created_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "execution_id",
-              "displayName": "execution_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "app_id",
-              "displayName": "app_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "token",
-              "displayName": "token",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "command",
-              "displayName": "command",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "created_at",
-              "displayName": "created_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "INSERT INTO runs (execution_id, user_id, app_id, token, command)\nVALUES ($1, $2, $3, $4, $5)\nON CONFLICT (execution_id) DO NOTHING\nRETURNING execution_id;",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, $('Verify & Parse').first().json.user_id, $('Verify & Parse').first().json.app_id, $('Verify & Parse').first().json.token, $('Verify & Parse').first().json.command ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         1328,
         112
       ],
       "name": "DB: Log Run",
-      "id": "f059bd03-7c59-426e-8f21-3f27beed713a"
+      "id": "d6809f3d-3b46-48df-aa27-199637d8b2cf",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -619,201 +550,30 @@
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "dataTableId": {
-          "__rl": true,
-          "value": "1bu0xnmV2dSqQTNB",
-          "mode": "list",
-          "cachedResultName": "facts",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Verify & Parse').first().json.user_id }}"
-            },
-            {
-              "keyName": "kind",
-              "keyValue": "cv_profile"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
-            "kind": "cv_profile",
-            "value": "={{ JSON.stringify($('AI: Parse Base CV').first().json.output) }}",
-            "source": "cv",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "kind",
-              "displayName": "kind",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "value",
-              "displayName": "value",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "source",
-              "displayName": "source",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "INSERT INTO profiles (user_id, full_name, base_cv, cv_profile)\nVALUES ($1, $2, $3, $4::jsonb)\nON CONFLICT (user_id) DO UPDATE SET\n  full_name = EXCLUDED.full_name, base_cv = EXCLUDED.base_cv,\n  cv_profile = EXCLUDED.cv_profile, updated_at = now()\nRETURNING user_id;",
+        "options": {
+          "queryReplacement": "={{ [ $('Verify & Parse').first().json.user_id, $('AI: Parse Base CV').first().json.output.full_name || '', $('Extract PDF Text').first().json.text.slice(0, 30000), JSON.stringify($('AI: Parse Base CV').first().json.output) ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         2848,
         -320
       ],
-      "name": "DB: Save CV Profile",
-      "id": "ef1f98f4-1750-41fc-b4a5-624fe0b4cccb"
-    },
-    {
-      "parameters": {
-        "operation": "upsert",
-        "dataTableId": {
-          "__rl": true,
-          "value": "1bu0xnmV2dSqQTNB",
-          "mode": "list",
-          "cachedResultName": "facts",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Verify & Parse').first().json.user_id }}"
-            },
-            {
-              "keyName": "kind",
-              "keyValue": "base_cv"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $('Verify & Parse').first().json.user_id }}",
-            "kind": "base_cv",
-            "value": "={{ $('Extract PDF Text').first().json.text.slice(0, 30000) }}",
-            "source": "cv",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "kind",
-              "displayName": "kind",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "value",
-              "displayName": "value",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "source",
-              "displayName": "source",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+      "name": "DB: Save Profile",
+      "id": "3aa1cbe1-4379-458d-9831-dd672f89d4d3",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        3072,
-        -320
-      ],
-      "name": "DB: Save Base CV Text",
-      "id": "43670b46-0e89-469b-a7fc-4386e19f5ddf"
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -829,7 +589,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3280,
+        3072,
         -320
       ],
       "name": "Reply: CV Saved",
@@ -1209,29 +969,7 @@
       "main": [
         [
           {
-            "node": "DB: Save CV Profile",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Save CV Profile": {
-      "main": [
-        [
-          {
-            "node": "DB: Save Base CV Text",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Save Base CV Text": {
-      "main": [
-        [
-          {
-            "node": "Reply: CV Saved",
+            "node": "DB: Save Profile",
             "type": "main",
             "index": 0
           }
@@ -1287,6 +1025,17 @@
         [
           {
             "node": "Run Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Save Profile": {
+      "main": [
+        [
+          {
+            "node": "Reply: CV Saved",
             "type": "main",
             "index": 0
           }

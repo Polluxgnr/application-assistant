@@ -73,34 +73,30 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "1JJJUwEyw7jAlHNl",
-          "mode": "list",
-          "cachedResultName": "runs",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1JJJUwEyw7jAlHNl"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "execution_id",
-              "keyValue": "={{ $('Format Error').first().json.execution_id }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT user_id, app_id, token, command FROM runs WHERE execution_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('Format Error').first().json.execution_id ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         896,
         112
       ],
       "name": "DB: Find Run",
-      "alwaysOutputData": true,
-      "id": "3defac91-516b-4e38-bfa8-5aed66536da9"
+      "id": "92b320b1-a80e-4fc7-82b3-fe176724904a",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {

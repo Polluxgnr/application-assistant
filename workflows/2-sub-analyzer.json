@@ -32,34 +32,30 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "1bu0xnmV2dSqQTNB",
-          "mode": "list",
-          "cachedResultName": "facts",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/1bu0xnmV2dSqQTNB"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Start').first().json.user_id }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT 'base_cv' AS kind, base_cv AS value FROM profiles WHERE user_id = $1\nUNION ALL\nSELECT 'cv_profile', cv_profile::text FROM profiles WHERE user_id = $1\nUNION ALL\nSELECT kind, value FROM facts WHERE user_id = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('Start').first().json.user_id ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         224,
         128
       ],
       "name": "DB: My Facts",
-      "alwaysOutputData": true,
-      "id": "ece83a68-9cd0-4738-9140-134c17726923"
+      "id": "bced05eb-d21a-4cc9-9865-18fd49400e32",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -489,142 +485,30 @@
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "dataTableId": {
-          "__rl": true,
-          "value": "VGBqX7I8stxaiuxa",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Code: Gap Analysis').first().json.user_id }}"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $('Code: Gap Analysis').first().json.user_id }}",
-            "state": "waiting",
-            "job_url": "={{ $('Code: Gap Analysis').first().json.url }}",
-            "job_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.offer) }}",
-            "job_text": "={{ ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000) }}",
-            "missing_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.missing_all) }}",
-            "question": "={{ $('AI: Draft Question').first().json.text }}",
-            "match_score": "={{ $('Code: Gap Analysis').first().json.match_score }}",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "state",
-              "displayName": "state",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_url",
-              "displayName": "job_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_json",
-              "displayName": "job_json",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_text",
-              "displayName": "job_text",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "missing_json",
-              "displayName": "missing_json",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "question",
-              "displayName": "question",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "match_score",
-              "displayName": "match_score",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "INSERT INTO sessions (user_id, state, job_url, job_json, job_text, missing_json, question, match_score)\nVALUES ($1, 'waiting', $2, $3::jsonb, $4, $5::jsonb, $6, $7)\nON CONFLICT (user_id) DO UPDATE SET\n  state = EXCLUDED.state, job_url = EXCLUDED.job_url, job_json = EXCLUDED.job_json,\n  job_text = EXCLUDED.job_text, missing_json = EXCLUDED.missing_json,\n  question = EXCLUDED.question, match_score = EXCLUDED.match_score, updated_at = now()\nRETURNING user_id, state;",
+        "options": {
+          "queryReplacement": "={{ [ $('Code: Gap Analysis').first().json.user_id, $('Code: Gap Analysis').first().json.url || '', JSON.stringify($('Code: Gap Analysis').first().json.offer), ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000), JSON.stringify($('Code: Gap Analysis').first().json.missing_all), $('AI: Draft Question').first().json.text, $('Code: Gap Analysis').first().json.match_score ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         2848,
         -128
       ],
       "name": "DB: Session = waiting",
-      "id": "ddfc3495-78cf-4cbe-b9b2-d9602a30120d"
+      "id": "05c21468-d325-425b-8d80-460226e6a877",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -674,142 +558,30 @@
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "dataTableId": {
-          "__rl": true,
-          "value": "VGBqX7I8stxaiuxa",
-          "mode": "list",
-          "cachedResultName": "sessions",
-          "cachedResultUrl": "/projects/RwsCUHkS04kcbPgs/datatables/VGBqX7I8stxaiuxa"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "user_id",
-              "keyValue": "={{ $('Code: Gap Analysis').first().json.user_id }}"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $('Code: Gap Analysis').first().json.user_id }}",
-            "state": "ready",
-            "job_url": "={{ $('Code: Gap Analysis').first().json.url }}",
-            "job_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.offer) }}",
-            "job_text": "={{ ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000) }}",
-            "missing_json": "={{ JSON.stringify($('Code: Gap Analysis').first().json.missing_all) }}",
-            "question": "",
-            "match_score": "={{ $('Code: Gap Analysis').first().json.match_score }}",
-            "updated_at": "={{ $now.toISO() }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "user_id",
-              "displayName": "user_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "state",
-              "displayName": "state",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_url",
-              "displayName": "job_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_json",
-              "displayName": "job_json",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "job_text",
-              "displayName": "job_text",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "missing_json",
-              "displayName": "missing_json",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "question",
-              "displayName": "question",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "match_score",
-              "displayName": "match_score",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {}
+        "operation": "executeQuery",
+        "query": "INSERT INTO sessions (user_id, state, job_url, job_json, job_text, missing_json, question, match_score)\nVALUES ($1, 'ready', $2, $3::jsonb, $4, $5::jsonb, $6, $7)\nON CONFLICT (user_id) DO UPDATE SET\n  state = EXCLUDED.state, job_url = EXCLUDED.job_url, job_json = EXCLUDED.job_json,\n  job_text = EXCLUDED.job_text, missing_json = EXCLUDED.missing_json,\n  question = EXCLUDED.question, match_score = EXCLUDED.match_score, updated_at = now()\nRETURNING user_id, state;",
+        "options": {
+          "queryReplacement": "={{ [ $('Code: Gap Analysis').first().json.user_id, $('Code: Gap Analysis').first().json.url || '', JSON.stringify($('Code: Gap Analysis').first().json.offer), ($('Code: Gap Analysis').first().json.job_text || '').slice(0, 12000), JSON.stringify($('Code: Gap Analysis').first().json.missing_all), '', $('Code: Gap Analysis').first().json.match_score ] }}"
+        }
       },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         2528,
         160
       ],
       "name": "DB: Session = ready",
-      "id": "4874c13a-b06c-4450-9818-c7f521c6f7b1"
+      "id": "c4c4a135-d558-4cff-ab6a-195e5954333c",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
