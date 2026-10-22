@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Imports credential placeholders and the workflows from ./workflows into the running n8n, then activates them.
 set -euo pipefail
+export MSYS_NO_PATHCONV=1  # Git Bash on Windows: keep container paths like /workflows as they are
 cd "$(dirname "$0")/.."
 set -a; . ./.env; set +a
 

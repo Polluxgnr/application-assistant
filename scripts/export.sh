@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Exports the workflows from n8n back into ./workflows (run before every commit that changes a workflow).
 set -euo pipefail
+export MSYS_NO_PATHCONV=1  # Git Bash on Windows: keep container paths like /workflows as they are
 cd "$(dirname "$0")/.."
 docker compose exec -T n8n sh -c 'rm -rf /tmp/export && mkdir -p /tmp/export && n8n export:workflow --all --separate --pretty --output=/tmp/export/' >/dev/null
 declare -A names=(

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # From a fresh clone to a running bot: creates .env, starts the stack, imports everything, prints the tunnel URL.
 set -euo pipefail
+export MSYS_NO_PATHCONV=1  # Git Bash on Windows: keep container paths like /workflows as they are
 cd "$(dirname "$0")/.."
 if [ ! -f .env ]; then
   cp .env.example .env
