@@ -36,6 +36,9 @@ Discord ──signed POST──► 1. Main ──/job──► 2. Analyzer ─�
    └──── edit that message: reply, PDF, links ◄────────────────────────────┘
 ```
 
+![Uploading image.png…]()
+
+
 APIs: Discord, OpenRouter (Gemini 3.5 Flash), Google Drive and Docs, the job pages (HTTP). Database: Postgres, tables `profiles`, `facts`, `sessions`, `runs` (`db/init/01-assistant-db.sh`).
 
 ## Run it locally with Docker
