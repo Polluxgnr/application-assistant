@@ -19,3 +19,4 @@ Thumbs.db
 # generated from .env by scripts/import.sh (contains the DB password)
 credentials/*.local.json
 credentials/.stubs-imported
+credentials/.secrets-imported
