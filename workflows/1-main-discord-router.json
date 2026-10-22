@@ -1066,7 +1066,7 @@
         "url": "=https://discord.com/api/v10/webhooks/{{ $('Verify & Parse').first().json.app_id }}/{{ $('Verify & Parse').first().json.token }}/messages/@original",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: String('ℹ️ Usage: `/job url:<link to the offer>` (must start with http:// or https://)\nor `/job text:<paste the full offer>` (a few lines at least).').slice(0, 1990) }) }}",
+        "jsonBody": "={{ JSON.stringify({ content: String('ℹ️ Usage: `/job url:<link to the offer>` (must start with http:// or https://)\\nor `/job text:<paste the full offer>` (a few lines at least).').slice(0, 1990) }) }}",
         "options": {
           "timeout": 15000
         }
