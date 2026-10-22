@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. New facts are saved **permanently** in `facts` (unique key: saving the same fact twice does nothing).",
+        "content": "## Generator · part 1 — learn from the answer\nInput: `user_id, app_id, token, answer`. The raw answer is remembered first: **the same answer twice is not processed twice** (idempotent). New facts are saved permanently in `facts` (unique key).",
         "height": 200,
         "width": 1560,
         "color": 4
@@ -304,7 +304,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ctx = $('Load Session').first().json;\nconst facts = ($input.first().json.output?.facts || []).filter(f => f && f.value);\nconst rows = facts.length ? facts : [{ kind: 'answer', value: ctx.answer }];\nreturn rows.map(f => ({ json: { user_id: ctx.user_id, kind: f.kind || 'answer', value: String(f.value).slice(0, 1000) } }));"
+        "jsCode": "const ctx = $('Load Session').first().json;\nconst facts = ($input.first().json.output?.facts || []).filter(f => f && f.value);\n// the raw answer is already saved by 'DB: Remember Answer'; if the AI found nothing, nothing more to save\nconst rows = facts.length ? facts : [{ kind: 'answer', value: ctx.answer }];\nreturn rows.map(f => ({ json: { user_id: ctx.user_id, kind: f.kind || 'answer', value: String(f.value).slice(0, 1000) } }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -930,6 +930,68 @@
       ],
       "name": "Return: ai_failed",
       "id": "95a73902-080f-49ee-b399-4c4223aad808"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO facts (user_id, kind, value, source)\nVALUES ($1, 'answer', $2, 'answer')\nON CONFLICT (user_id, kind, value_hash) DO NOTHING\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $('Load Session').first().json.user_id, $('Load Session').first().json.answer ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        884,
+        -216
+      ],
+      "name": "DB: Remember Answer",
+      "id": "b4396ae5-be89-4444-87e7-1379c8e09bbd",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7df963f9-5c4c-48fc-91ef-5128db2121d9",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        -216
+      ],
+      "name": "New answer?",
+      "id": "6a2a1b33-a8d9-444b-9e34-ee8fe8eaedb4"
     }
   ],
   "pinData": {
@@ -1079,7 +1141,7 @@
       "main": [
         [
           {
-            "node": "AI: Extract New Skills",
+            "node": "DB: Remember Answer",
             "type": "main",
             "index": 0
           }
@@ -1328,6 +1390,35 @@
         [
           {
             "node": "Return: ai_failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Remember Answer": {
+      "main": [
+        [
+          {
+            "node": "New answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New answer?": {
+      "main": [
+        [
+          {
+            "node": "AI: Extract New Skills",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: All My Facts",
             "type": "main",
             "index": 0
           }
