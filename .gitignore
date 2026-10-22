@@ -1,22 +1,10 @@
 # secrets: only .env.example is committed
 .env
-*.env.local
 
-# local data and volumes (docker uses named volumes, these are for bind-mount experiments)
+# local data, volumes and credential exports
 data/
 volumes/
-backups/
-
-# credential exports must never be committed
-credentials*.json
 *.decrypted.json
 
-# OS / editor noise
 .DS_Store
 Thumbs.db
-.vscode/
-
-# generated from .env by scripts/import.sh (contains the DB password)
-credentials/*.local.json
-credentials/.stubs-imported
-credentials/.secrets-imported

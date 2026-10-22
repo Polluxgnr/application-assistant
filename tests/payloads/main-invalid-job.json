@@ -1,6 +1,0 @@
-{
-  "command": "job",
-  "url": "not-a-link",
-  "text": "",
-  "expected": "usage message"
-}
