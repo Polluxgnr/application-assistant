@@ -6,6 +6,7 @@ docker compose exec -T n8n sh -c 'rm -rf /tmp/export && mkdir -p /tmp/export && 
 declare -A names=(
   [6Cy0U9WN3YmH5MAn]=0-setup-register-commands [qGOZbSYnXWg9CR0O]=1-main-discord-router
   [C3Ew0OtmltX5dMDE]=2-sub-analyzer [BuBLvhHQEfmDExIe]=3-sub-generator [xrabiaYTkTTQjDY4]=4-error-handler
+  [InspectDbView001]=5-inspect-database
 )
 for id in "${!names[@]}"; do
   docker compose exec -T n8n cat "/tmp/export/$id.json" > "workflows/${names[$id]}.json"

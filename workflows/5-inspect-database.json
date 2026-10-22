@@ -1,0 +1,168 @@
+{
+  "name": "5. Inspect – Project database",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Inspect the project database\nRun it during the demo to show the state saved across runs: the CV profile, the facts learned from answers (no duplicates), the job session and the run log.",
+        "height": 160,
+        "width": 900,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -240
+      ],
+      "name": "I1",
+      "id": "f99249af-a7c3-4a05-8c49-0d109a1f0907"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        112
+      ],
+      "name": "Show tables",
+      "id": "127a9675-9414-4431-8eec-24246ac08a8d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT user_id, full_name,\n       jsonb_array_length(coalesce(cv_profile->'skills', '[]')) + jsonb_array_length(coalesce(cv_profile->'tools', '[]')) AS skills_tools,\n       jsonb_array_length(coalesce(cv_profile->'experiences', '[]')) AS experiences, updated_at\nFROM profiles;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        -96
+      ],
+      "name": "Profiles",
+      "id": "c8a9c067-efb2-43cb-ad15-4458cdce4b2e",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, kind, value, created_at FROM facts ORDER BY id DESC LIMIT 15;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        48
+      ],
+      "name": "Facts (latest 15)",
+      "id": "5fe37c38-ada2-4b76-a77d-d5935b233c61",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT user_id, state, match_score, job_json->>'company' AS company, job_json->>'role_title' AS role,\n       missing_json, updated_at\nFROM sessions;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        192
+      ],
+      "name": "Sessions",
+      "id": "5bdcc07e-f2f2-4096-ad82-5bd492fda043",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT execution_id, command, created_at FROM runs ORDER BY created_at DESC LIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        336
+      ],
+      "name": "Runs (latest 10)",
+      "id": "8497ce32-1d7c-43d8-ad48-38f5ea58b8ad",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "postgres": {
+          "id": "pgAssistantDb001",
+          "name": "Assistant DB (Postgres)"
+        }
+      },
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Show tables": {
+      "main": [
+        [
+          {
+            "node": "Profiles",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facts (latest 15)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sessions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Runs (latest 10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9157bba4-def5-40b8-98e8-f0fe568da7e5",
+  "id": "InspectDbView001",
+  "tags": []
+}
